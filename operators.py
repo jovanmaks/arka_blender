@@ -22,16 +22,15 @@ class RegenerateOperator(bpy.types.Operator):
     bl_label = "Regenerate"
 
     def execute(self, context):
-        context.scene.dimension_entries.clear()
-        for obj in bpy.data.objects:
-            if obj.type == 'MESH':
+        for entry in context.scene.dimension_entries:
+            obj = bpy.data.objects.get(entry.name)
+            if obj and obj.type == 'MESH':
                 dimensions = obj.dimensions
-                new_entry = context.scene.dimension_entries.add()
-                new_entry.name = obj.name
-                new_entry.width = round(dimensions.x * 100, 1)  # Convert to cm and round to 2 decimal places
-                new_entry.height = round(dimensions.y * 100, 1)  # Convert to cm and round to 2 decimal places
-                new_entry.length = round(dimensions.z * 100, 1)  # Convert to cm and round to 2 decimal places
+                entry.width = round(dimensions.x * 100, 1)  # Convert to cm and round to 2 decimal places
+                entry.height = round(dimensions.y * 100, 1)  # Convert to cm and round to 2 decimal places
+                entry.length = round(dimensions.z * 100, 1)  # Convert to cm and round to 2 decimal places
         return {'FINISHED'}
+
 
 class RemoveDimensionOperator(bpy.types.Operator):
     bl_idname = "object.remove_dimension"
