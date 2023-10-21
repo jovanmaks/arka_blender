@@ -141,21 +141,33 @@ class ExportCSVOperator(bpy.types.Operator):
     def execute(self, context):
         with open(self.filepath, 'w', newline='') as csvfile:  # Use the chosen filepath
             csvwriter = csv.writer(csvfile)
-            
+
             # Write the header
-            csvwriter.writerow(['Ime', 'Duza', 'Kraca', 'Debljina'])
-            
+            csvwriter.writerow(['Ime', 'Duza', 'Kraca', 'Debljina', 'Obrada'])  # <-- Added 'Kant' here
+
             # Write the dimensions
             for entry in context.scene.dimension_entries:
                 # Sort and round to 2nd decimal place
                 sorted_dims = sorted([entry.width, entry.height, entry.length], reverse=True)
                 sorted_dims = [round(x, 2) for x in sorted_dims]
-                
-                csvwriter.writerow([entry.name, *sorted_dims])
+
+                # Calculate 'Kant' value based on toggle states
+                kant_value = ""
+                if entry.is_toggled_1:
+                    kant_value += "L"
+                if entry.is_toggled_2:
+                    kant_value += "L"
+                if entry.is_toggled_3:
+                    kant_value += "S"
+                if entry.is_toggled_4:
+                    kant_value += "S"
+
+                csvwriter.writerow([entry.name, *sorted_dims, kant_value])  # <-- Added kant_value here
 
         self.report({'INFO'}, f"Dimensions exported to {self.filepath}")
-        
+
         return {'FINISHED'}
+
 
     def invoke(self, context, event):  # <-- Add this method for the file dialog
         # Set the default filepath dynamically
