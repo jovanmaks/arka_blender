@@ -3,7 +3,6 @@ import csv
 import os
 
 class GetDimensionOperator(bpy.types.Operator):
-    # ... (rest of the code unchanged)
     bl_idname = "object.get_dimension"
     bl_label = "Get Dimensions"  #
 
@@ -19,7 +18,6 @@ class GetDimensionOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 class RegenerateOperator(bpy.types.Operator):
-    # ... (rest of the code unchanged)
     bl_idname = "object.regenerate_dimensions"
     bl_label = "Regenerate"
 
@@ -45,8 +43,15 @@ class RemoveDimensionOperator(bpy.types.Operator):
         context.scene.dimension_entries.remove(self.index)
         return {'FINISHED'}
 
-import bpy
-import csv
+class ClearAllDimensionsOperator(bpy.types.Operator):
+    bl_idname = "object.clear_all_dimensions"
+    bl_label = "Clear All"
+
+    def execute(self, context):
+        context.scene.dimension_entries.clear()
+        return {'FINISHED'}
+
+
 
 class ExportCSVOperator(bpy.types.Operator):
     bl_idname = "object.export_csv"
@@ -79,10 +84,12 @@ def register():
     bpy.utils.register_class(GetDimensionOperator)
     bpy.utils.register_class(RegenerateOperator)
     bpy.utils.register_class(RemoveDimensionOperator)
+    bpy.utils.register_class(ClearAllDimensionsOperator)
     bpy.utils.register_class(ExportCSVOperator)
 
 def unregister():
     bpy.utils.unregister_class(GetDimensionOperator)
     bpy.utils.unregister_class(RegenerateOperator)
     bpy.utils.unregister_class(RemoveDimensionOperator)
+    bpy.utils.unregister_class(ClearAllDimensionsOperator)
     bpy.utils.unregister_class(ExportCSVOperator) 

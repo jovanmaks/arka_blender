@@ -39,7 +39,7 @@ class SimplePanel(bpy.types.Panel):
         layout.operator("object.get_dimension")
         layout.operator("object.regenerate_dimensions")
         layout.operator("object.export_csv")
-        # layout.operator("object.testing")
+        layout.operator("object.clear_all_dimensions")
 
 def register():
     bpy.utils.register_class(SimplePanel)
