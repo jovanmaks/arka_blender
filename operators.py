@@ -26,10 +26,12 @@ class RegenerateOperator(bpy.types.Operator):
             obj = bpy.data.objects.get(entry.name)
             if obj and obj.type == 'MESH':
                 dimensions = obj.dimensions
+                entry.name = obj.name  # Update the name
                 entry.width = round(dimensions.x * 100, 1)  # Convert to cm and round to 2 decimal places
                 entry.height = round(dimensions.y * 100, 1)  # Convert to cm and round to 2 decimal places
                 entry.length = round(dimensions.z * 100, 1)  # Convert to cm and round to 2 decimal places
         return {'FINISHED'}
+
 
 
 class RemoveDimensionOperator(bpy.types.Operator):

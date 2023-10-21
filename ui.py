@@ -26,13 +26,13 @@ class SimplePanel(bpy.types.Panel):
             row.label(text=f"{entry.name}")
 
             row.scale_x = 0.2
-            row.label(text=f"{entry.width}")
+            row.label(text=f"{entry.width:.2f}")
 
             row.scale_x = 0.2
-            row.label(text=f"{entry.height}")
+            row.label(text=f"{entry.height:.2f}")
 
             row.scale_x = 0.2
-            row.label(text=f"{entry.length}")
+            row.label(text=f"{entry.length:.2f}")
 
             row.scale_x = 0.2
             remove_op = row.operator("object.remove_dimension", text="X")
