@@ -14,9 +14,9 @@ class SimplePanel(bpy.types.Panel):
 
         row = layout.row()
         row.label(text="Name")
-        row.label(text="Width")
-        row.label(text="Height")
-        row.label(text="Length")
+        row.label(text="Long")
+        row.label(text="Short")
+        row.label(text="Thick")
         row.label(text="Remove")
 
         for index, entry in enumerate(context.scene.dimension_entries):
@@ -38,13 +38,13 @@ class SimplePanel(bpy.types.Panel):
             remove_op = row.operator("object.remove_dimension", text="X")
             remove_op.index = index
 
-        row = layout.row()
-        layout.operator("object.get_dimension")
-        layout.operator("object.regenerate_dimensions")
+        row = layout.row(align=True)
+        row.operator("object.get_dimension")
+        row.operator("object.regenerate_dimensions")
 
-        row = layout.row()
-        layout.operator("object.export_csv")
-        layout.operator("object.clear_all_dimensions")
+        row = layout.row(align=True)
+        row.operator("object.export_csv")
+        row.operator("object.clear_all_dimensions")
 
 def register():
     bpy.utils.register_class(SimplePanel)
