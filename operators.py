@@ -170,10 +170,15 @@ class ToggleEntryOperator(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     index: bpy.props.IntProperty()
+    toggle_id: bpy.props.IntProperty()  # new field to identify which button is pressed
 
     def execute(self, context):
-        context.scene.dimension_entries[self.index].is_toggled = not context.scene.dimension_entries[self.index].is_toggled
+        toggle_attr = f'is_toggled_{self.toggle_id}'
+        if hasattr(context.scene.dimension_entries[self.index], toggle_attr):
+            current_state = getattr(context.scene.dimension_entries[self.index], toggle_attr)
+            setattr(context.scene.dimension_entries[self.index], toggle_attr, not current_state)
         return {'FINISHED'}
+
 
 
 def register():

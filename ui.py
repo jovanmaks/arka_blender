@@ -17,7 +17,10 @@ class SimplePanel(bpy.types.Panel):
         row.label(text="Long")
         row.label(text="Short")
         row.label(text="Thick")
-        row.label(text="Toggle")
+        row.label(text="Long 1")
+        row.label(text="Long 2")
+        row.label(text="Short 1")
+        row.label(text="Short 2")
         row.label(text="Remove")
 
         sorted_entries = sorted(context.scene.dimension_entries, key=lambda x: x.length, reverse=True)
@@ -45,22 +48,21 @@ class SimplePanel(bpy.types.Panel):
             # remove_op = row.operator("object.remove_dimension", text="X")
             # remove_op.index = index
 
+
+        
+            # Toggle button
+            row.scale_x = 0.2
+            for i in range(1, 5):
+                toggle_text = "YES" if getattr(entry, f'is_toggled_{i}') else "NO"
+                toggle_op = row.operator("object.toggle_entry", text=toggle_text)
+                toggle_op.index = original_index
+                toggle_op.toggle_id = i
+
+            # Remove button
             if original_index is not None:
+                row.scale_x = 0.2
                 remove_op = row.operator("object.remove_dimension", text="X")
                 remove_op.index = original_index
-
-            #  # Toggle button with icon
-            # row.scale_x = 0.2
-            # toggle_icon = 'CHECKBOX_HLT' if entry.is_toggled else 'CHECKBOX_DEHLT'
-            # toggle_op = row.operator("object.toggle_entry", text="", icon=toggle_icon)
-            # toggle_op.index = original_index
-
-
-             # Toggle button
-            row.scale_x = 0.2
-            toggle_text = "On" if entry.is_toggled else "Off"
-            toggle_op = row.operator("object.toggle_entry", text=toggle_text)
-            toggle_op.index = original_index  # Send the original_index to the operator to know which entry to toggle
 
 
         row = layout.row(align=True)

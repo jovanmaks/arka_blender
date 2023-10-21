@@ -6,10 +6,14 @@ class DimensionEntry(bpy.types.PropertyGroup):
     height: bpy.props.FloatProperty(name="Height")
     length: bpy.props.FloatProperty(name="Length")
     unique_id: bpy.props.StringProperty(name="Unique ID")
-    is_toggled: bpy.props.BoolProperty(name="Is Toggled")
 
-    # label_L: bpy.props.IntProperty(min=0, max=2)  # new field, between 0 and 2
-    # label_S: bpy.props.IntProperty(min=0, max=2)  # new field, between 0 and 2
+
+      # New toggle states
+    is_toggled_1: bpy.props.BoolProperty(name="Is Long 1")
+    is_toggled_2: bpy.props.BoolProperty(name="Is Long 2")
+    is_toggled_3: bpy.props.BoolProperty(name="Is Short 1")
+    is_toggled_4: bpy.props.BoolProperty(name="Is Short 2")
+ 
 
 def register():
     bpy.utils.register_class(DimensionEntry)
