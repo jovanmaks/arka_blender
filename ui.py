@@ -38,8 +38,11 @@ class SimplePanel(bpy.types.Panel):
             remove_op = row.operator("object.remove_dimension", text="X")
             remove_op.index = index
 
+        row = layout.row()
         layout.operator("object.get_dimension")
         layout.operator("object.regenerate_dimensions")
+
+        row = layout.row()
         layout.operator("object.export_csv")
         layout.operator("object.clear_all_dimensions")
 

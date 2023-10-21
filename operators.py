@@ -4,21 +4,32 @@ import os
 
 class GetDimensionOperator(bpy.types.Operator):
     bl_idname = "object.get_dimension"
-    bl_label = "Get Dimensions"  #
+    bl_label = "Get"  #
 
     def execute(self, context):
         obj = bpy.context.active_object
         if obj is not None and obj.type == 'MESH':
+            
+            # Generate a unique ID for the object
+            unique_id = str(hash(obj))
+            
+            # Check if this unique_id already exists in the collection
+            if any(entry.unique_id == unique_id for entry in context.scene.dimension_entries):
+                self.report({'WARNING'}, "This object is already in the list.")
+                return {'CANCELLED'}
+
+            # If it doesn't exist, then add it to the collection
             dimensions = obj.dimensions
-            unique_id = str(hash(obj))  # Generate a unique ID
             obj['unique_id'] = unique_id  # Add a custom property to the object
             new_entry = context.scene.dimension_entries.add()
             new_entry.name = obj.name
             new_entry.unique_id = unique_id
-            new_entry.width = round(dimensions.x * 100, 1)  # Convert to cm and round to 2 decimal places
-            new_entry.height = round(dimensions.y * 100, 1)  # Convert to cm and round to 2 decimal places
-            new_entry.length = round(dimensions.z * 100, 1)  # Convert to cm and round to 2 decimal places
+            new_entry.width = round(dimensions.x * 100, 1)
+            new_entry.height = round(dimensions.y * 100, 1)
+            new_entry.length = round(dimensions.z * 100, 1)
+
         return {'FINISHED'}
+
 
 class RegenerateOperator(bpy.types.Operator):
     bl_idname = "object.regenerate_dimensions"
@@ -49,7 +60,7 @@ class RemoveDimensionOperator(bpy.types.Operator):
 
 class ClearAllDimensionsOperator(bpy.types.Operator):
     bl_idname = "object.clear_all_dimensions"
-    bl_label = "Clear All"
+    bl_label = "Clear"
 
     def execute(self, context):
         context.scene.dimension_entries.clear()
@@ -59,7 +70,7 @@ class ClearAllDimensionsOperator(bpy.types.Operator):
 
 class ExportCSVOperator(bpy.types.Operator):
     bl_idname = "object.export_csv"
-    bl_label = "Export to CSV"
+    bl_label = "CSV"
     
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")  # <-- Add this line for file path
 
