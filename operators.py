@@ -131,18 +131,27 @@ class ExportCSVOperator(bpy.types.Operator):
     bl_idname = "object.export_csv"
     bl_label = "CSV"
     
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")  # <-- Add this line for file path
+    filepath: bpy.props.StringProperty(
+        subtype="FILE_PATH",
+        name="Save As",  # Placeholder text
+        description="Save dimensions to CSV",
+        default="name.csv"  # Default name with extension
+    )  
 
     def execute(self, context):
         with open(self.filepath, 'w', newline='') as csvfile:  # Use the chosen filepath
             csvwriter = csv.writer(csvfile)
             
             # Write the header
-            csvwriter.writerow(['Ime', 'Sirina', 'Visina', 'Duzina'])
+            csvwriter.writerow(['Ime', 'Duza', 'Kraca', 'Debljina'])
             
             # Write the dimensions
             for entry in context.scene.dimension_entries:
-                csvwriter.writerow([entry.name, entry.width, entry.height, entry.length])
+                # Sort and round to 2nd decimal place
+                sorted_dims = sorted([entry.width, entry.height, entry.length], reverse=True)
+                sorted_dims = [round(x, 2) for x in sorted_dims]
+                
+                csvwriter.writerow([entry.name, *sorted_dims])
 
         self.report({'INFO'}, f"Dimensions exported to {self.filepath}")
         
@@ -151,6 +160,7 @@ class ExportCSVOperator(bpy.types.Operator):
     def invoke(self, context, event):  # <-- Add this method for the file dialog
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
 
 
 
