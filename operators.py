@@ -164,6 +164,16 @@ class ExportCSVOperator(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
+class ToggleEntryOperator(bpy.types.Operator):
+    bl_idname = "object.toggle_entry"
+    bl_label = "Toggle Entry"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        context.scene.dimension_entries[self.index].is_toggled = not context.scene.dimension_entries[self.index].is_toggled
+        return {'FINISHED'}
 
 
 def register():
@@ -172,10 +182,12 @@ def register():
     bpy.utils.register_class(RemoveDimensionOperator)
     bpy.utils.register_class(ClearAllDimensionsOperator)
     bpy.utils.register_class(ExportCSVOperator)
+    bpy.utils.register_class(ToggleEntryOperator) 
 
 def unregister():
     bpy.utils.unregister_class(GetDimensionOperator)
     bpy.utils.unregister_class(RegenerateOperator)
     bpy.utils.unregister_class(RemoveDimensionOperator)
     bpy.utils.unregister_class(ClearAllDimensionsOperator)
-    bpy.utils.unregister_class(ExportCSVOperator) 
+    bpy.utils.unregister_class(ExportCSVOperator)
+    bpy.utils.unregister_class(ToggleEntryOperator) 
