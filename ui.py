@@ -20,23 +20,33 @@ class SimplePanel(bpy.types.Panel):
         row.label(text="Remove")
 
         for index, entry in enumerate(context.scene.dimension_entries):
+            # Sort the dimensions
+            sorted_dims = sorted([entry.width, entry.height, entry.length], reverse=True)
+            
             row = layout.row(align=True)
 
             row.scale_x = 0.2  # You can set the scaling factor for the row
             row.label(text=f"{entry.name}")
 
+            # Use sorted dimensions here
             row.scale_x = 0.2
-            row.label(text=f"{entry.width:.2f}")
+            row.label(text=f"{sorted_dims[0]:.2f}")
 
             row.scale_x = 0.2
-            row.label(text=f"{entry.height:.2f}")
+            row.label(text=f"{sorted_dims[1]:.2f}")
 
             row.scale_x = 0.2
-            row.label(text=f"{entry.length:.2f}")
+            row.label(text=f"{sorted_dims[2]:.2f}")
 
             row.scale_x = 0.2
-            remove_op = row.operator("object.remove_dimension", text="X")
-            remove_op.index = index
+
+            original_index = next((i for i, e in enumerate(context.scene.dimension_entries) if e.unique_id == entry.unique_id), None)
+
+            if original_index is not None:
+                remove_op = row.operator("object.remove_dimension", text="X")
+                remove_op.index = original_index
+
+
 
         row = layout.row(align=True)
         row.operator("object.get_dimension")
