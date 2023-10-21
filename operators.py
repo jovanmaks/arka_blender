@@ -158,9 +158,11 @@ class ExportCSVOperator(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):  # <-- Add this method for the file dialog
+        # Set the default filepath dynamically
+        self.filepath = "name.csv"
+        
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
-
 
 
 
