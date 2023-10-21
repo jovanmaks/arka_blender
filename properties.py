@@ -5,6 +5,7 @@ class DimensionEntry(bpy.types.PropertyGroup):
     width: bpy.props.FloatProperty(name="Width")
     height: bpy.props.FloatProperty(name="Height")
     length: bpy.props.FloatProperty(name="Length")
+    unique_id: bpy.props.StringProperty(name="Unique ID")
 
 def register():
     bpy.utils.register_class(DimensionEntry)

@@ -10,8 +10,11 @@ class GetDimensionOperator(bpy.types.Operator):
         obj = bpy.context.active_object
         if obj is not None and obj.type == 'MESH':
             dimensions = obj.dimensions
+            unique_id = str(hash(obj))  # Generate a unique ID
+            obj['unique_id'] = unique_id  # Add a custom property to the object
             new_entry = context.scene.dimension_entries.add()
             new_entry.name = obj.name
+            new_entry.unique_id = unique_id
             new_entry.width = round(dimensions.x * 100, 1)  # Convert to cm and round to 2 decimal places
             new_entry.height = round(dimensions.y * 100, 1)  # Convert to cm and round to 2 decimal places
             new_entry.length = round(dimensions.z * 100, 1)  # Convert to cm and round to 2 decimal places
@@ -23,7 +26,7 @@ class RegenerateOperator(bpy.types.Operator):
 
     def execute(self, context):
         for entry in context.scene.dimension_entries:
-            obj = bpy.data.objects.get(entry.name)
+            obj = next((o for o in bpy.data.objects if o.get('unique_id') == entry.unique_id), None)
             if obj and obj.type == 'MESH':
                 dimensions = obj.dimensions
                 entry.name = obj.name  # Update the name
