@@ -36,33 +36,28 @@ def set_object_material(obj, color=(0, 1, 0, 1)):  # default color is green
 
 class GetDimensionOperator(bpy.types.Operator):
     bl_idname = "object.get_dimension"
-    bl_label = "Get"  #
+    bl_label = "Get"
 
     def execute(self, context):
-        obj = bpy.context.active_object
-        if obj is not None and obj.type == 'MESH':
+        for obj in bpy.context.selected_objects:
+            if obj is not None and obj.type == 'MESH':
+                unique_id = str(hash(obj))
 
+                # Check if this unique_id already exists in the collection
+                if any(entry.unique_id == unique_id for entry in context.scene.dimension_entries):
+                    self.report({'WARNING'}, f"{obj.name} is already in the list.")
+                    continue
 
-            # Generate a unique ID for the object
-            unique_id = str(hash(obj))
-            
-            # Check if this unique_id already exists in the collection
-            if any(entry.unique_id == unique_id for entry in context.scene.dimension_entries):
-                self.report({'WARNING'}, "This object is already in the list.")
-                return {'CANCELLED'}
+                dimensions = obj.dimensions
+                obj['unique_id'] = unique_id  # Add a custom property to the object
+                new_entry = context.scene.dimension_entries.add()
+                new_entry.name = obj.name
+                new_entry.unique_id = unique_id
+                new_entry.width = round(dimensions.x * 100, 1)
+                new_entry.height = round(dimensions.y * 100, 1)
+                new_entry.length = round(dimensions.z * 100, 1)
 
-            # If it doesn't exist, then add it to the collection
-            dimensions = obj.dimensions
-            obj['unique_id'] = unique_id  # Add a custom property to the object
-            new_entry = context.scene.dimension_entries.add()
-            new_entry.name = obj.name
-            new_entry.unique_id = unique_id
-            new_entry.width = round(dimensions.x * 100, 1)
-            new_entry.height = round(dimensions.y * 100, 1)
-            new_entry.length = round(dimensions.z * 100, 1)
-
-
-            set_object_material(obj)
+                set_object_material(obj)
 
         return {'FINISHED'}
 
