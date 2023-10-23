@@ -15,16 +15,19 @@ bl_info = {
         }
 
 from . import operators
+from . import supabaseOperators
 from . import ui
 from . import properties
 
 def register():
     operators.register()
+    supabaseOperators.register()
     ui.register()
     properties.register()
 
 def unregister():
     operators.unregister()
+    supabaseOperators.unregister()
     ui.unregister()
     properties.unregister()
 

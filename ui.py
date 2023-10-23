@@ -12,8 +12,17 @@ class SimplePanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
+
+        layout.separator()
+
+        row = layout.row(align=True)
+        row.operator("object.get_dimension")
+        row.operator("object.regenerate_dimensions")
+        row.operator("object.clear_all_dimensions")
+
+
         row = layout.row()
-        row.label(text="Name")
+        row.label(text="Name")  
         row.label(text="Long")
         row.label(text="Short")
         row.label(text="Thick")
@@ -27,19 +36,23 @@ class SimplePanel(bpy.types.Panel):
 
         for index, entry in enumerate(sorted_entries):
 
+            sorted_dims = sorted([entry.width, entry.height, entry.length], reverse=True)
+            sorted_dims = [round(x, 2) for x in sorted_dims]
+        
+
             row = layout.row(align=True)
 
             row.scale_x = 0.2  # You can set the scaling factor for the row
             row.label(text=f"{entry.name}")
 
             row.scale_x = 0.2
-            row.label(text=f"{entry.width:.2f}")
+            row.label(text=f"{sorted_dims[0]:.2f}")  # Long
 
             row.scale_x = 0.2
-            row.label(text=f"{entry.height:.2f}")
+            row.label(text=f"{sorted_dims[1]:.2f}")  # Middle
 
             row.scale_x = 0.2
-            row.label(text=f"{entry.length:.2f}")
+            row.label(text=f"{sorted_dims[2]:.2f}")  # Short
 
             row.scale_x = 0.2
 
@@ -65,13 +78,9 @@ class SimplePanel(bpy.types.Panel):
                 remove_op.index = original_index
 
 
-        row = layout.row(align=True)
-        row.operator("object.get_dimension")
-        row.operator("object.regenerate_dimensions")
 
         row = layout.row(align=True)
         row.operator("object.export_csv")
-        row.operator("object.clear_all_dimensions")
 
 def register():
     bpy.utils.register_class(SimplePanel)
