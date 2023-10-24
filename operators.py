@@ -64,7 +64,7 @@ class GetDimensionOperator(bpy.types.Operator):
 
 class RegenerateOperator(bpy.types.Operator):
     bl_idname = "object.regenerate_dimensions"
-    bl_label = "Regenerate"
+    bl_label = "Reload"
 
     def execute(self, context):
         for entry in context.scene.dimension_entries:

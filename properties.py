@@ -18,7 +18,9 @@ class DimensionEntry(bpy.types.PropertyGroup):
 def register():
     bpy.utils.register_class(DimensionEntry)
     bpy.types.Scene.dimension_entries = bpy.props.CollectionProperty(type=DimensionEntry)
+    bpy.types.Scene.dimension_entries_index = bpy.props.IntProperty(name="Dimension Index")
 
 def unregister():
     bpy.utils.unregister_class(DimensionEntry)
     del bpy.types.Scene.dimension_entries
+    del bpy.types.Scene.dimension_entries_index
