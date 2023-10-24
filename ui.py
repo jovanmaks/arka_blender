@@ -12,6 +12,18 @@ class SimplePanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
+        # col = layout.column(align=True)
+        # col.prop(context.scene, "project_name", text="Project Name")
+        # col.prop(context.scene, "material_name", text="Material")
+
+
+        row = layout.row()
+        row.prop(context.scene, "project_name", text="Project")
+        
+        row = layout.row()
+        row.prop(context.scene, "material_name", text="Material")
+
+
 
         layout.separator()
 
@@ -84,6 +96,10 @@ class SimplePanel(bpy.types.Panel):
 
 def register():
     bpy.utils.register_class(SimplePanel)
+    bpy.types.Scene.project_name = bpy.props.StringProperty(name="Project")
+    bpy.types.Scene.material_name = bpy.props.StringProperty(name="Material")
 
 def unregister():
     bpy.utils.unregister_class(SimplePanel)
+    del bpy.types.Scene.project_name
+    del bpy.types.Scene.material_name
