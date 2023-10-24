@@ -63,7 +63,8 @@ class SimplePanel(bpy.types.Panel):
         row.prop(context.scene, "container_width", text="Container Width")
         row.prop(context.scene, "container_height", text="Container Height")
         
-        row = layout.row()
+        row = layout.row(align=True)
+        row.operator("object.run_project_objects")
         row.operator("object.run_nesting_algorithm")
 
 

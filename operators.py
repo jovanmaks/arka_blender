@@ -168,6 +168,7 @@ class ExportCSVOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
+
     def invoke(self, context, event):
         # Use the project name as the default filepath
         self.filepath = f"{context.scene.project_name}.csv"
@@ -182,7 +183,7 @@ class ToggleEntryOperator(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     index: bpy.props.IntProperty()
-    toggle_id: bpy.props.IntProperty()  # new field to identify which button is pressed
+    toggle_id: bpy.props.IntProperty()
 
     def execute(self, context):
         toggle_attr = f'is_toggled_{self.toggle_id}'
@@ -207,4 +208,4 @@ def unregister():
     bpy.utils.unregister_class(RemoveDimensionOperator)
     bpy.utils.unregister_class(ClearAllDimensionsOperator)
     bpy.utils.unregister_class(ExportCSVOperator)
-    bpy.utils.unregister_class(ToggleEntryOperator) 
+    bpy.utils.unregister_class(ToggleEntryOperator)
