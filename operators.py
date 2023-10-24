@@ -39,6 +39,8 @@ class GetDimensionOperator(bpy.types.Operator):
     bl_label = "Get"
 
     def execute(self, context):
+        
+
         for obj in bpy.context.selected_objects:
             if obj is not None and obj.type == 'MESH':
                 unique_id = str(hash(obj))
@@ -133,48 +135,46 @@ class ExportCSVOperator(bpy.types.Operator):
     
     filepath: bpy.props.StringProperty(
         subtype="FILE_PATH",
-        name="Save As",  # Placeholder text
+        name="Save As",
         description="Save dimensions to CSV",
-        default="name.csv"  # Default name with extension
-    )  
+        default="name.csv"  
+    )
 
     def execute(self, context):
-        with open(self.filepath, 'w', newline='') as csvfile:  # Use the chosen filepath
+        
+
+        with open(self.filepath, 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)
 
-            # Write the header
-            csvwriter.writerow(['Ime', 'Duza', 'Kraca', 'Debljina', 'Obrada'])  # <-- Added 'Kant' here
+            # Write the header with an extra 'Material' column
+            csvwriter.writerow([ 'Ime', 'Duza', 'Kraca', 'Debljina', 'Obrada', 'Material'])
 
             # Write the dimensions
             for entry in context.scene.dimension_entries:
-                # Sort and round to 2nd decimal place
                 sorted_dims = sorted([entry.width, entry.height, entry.length], reverse=True)
                 sorted_dims = [round(x, 2) for x in sorted_dims]
 
-                # Calculate 'Kant' value based on toggle states
                 kant_value = ""
-                if entry.is_toggled_1:
-                    kant_value += "L"
-                if entry.is_toggled_2:
-                    kant_value += "L"
-                if entry.is_toggled_3:
-                    kant_value += "S"
-                if entry.is_toggled_4:
-                    kant_value += "S"
+                for i in range(1, 5):
+                    if getattr(entry, f'is_toggled_{i}'):
+                        kant_value += "S" if i > 2 else "L"
 
-                csvwriter.writerow([entry.name, *sorted_dims, kant_value])  # <-- Added kant_value here
+                # Use the material name from the UI
+                material_name = context.scene.material_name
+
+                csvwriter.writerow([ entry.name, *sorted_dims, kant_value, material_name])
 
         self.report({'INFO'}, f"Dimensions exported to {self.filepath}")
 
         return {'FINISHED'}
 
-
-    def invoke(self, context, event):  # <-- Add this method for the file dialog
-        # Set the default filepath dynamically
-        self.filepath = "name.csv"
+    def invoke(self, context, event):
+        # Use the project name as the default filepath
+        self.filepath = f"{context.scene.project_name}.csv"
         
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
 
 class ToggleEntryOperator(bpy.types.Operator):
     bl_idname = "object.toggle_entry"
