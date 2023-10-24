@@ -18,18 +18,21 @@ from . import operators
 from . import supabaseOperators
 from . import ui
 from . import properties
+from . import nesting
 
 def register():
     operators.register()
     supabaseOperators.register()
     ui.register()
     properties.register()
+    nesting.register()
 
 def unregister():
     operators.unregister()
     supabaseOperators.unregister()
     ui.unregister()
     properties.unregister()
+    nesting.unregister()
 
 if __name__ == "__main__":
     register()

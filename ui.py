@@ -59,6 +59,14 @@ class SimplePanel(bpy.types.Panel):
         row = layout.row(align=True)
         row.operator("object.export_csv")
 
+        row = layout.row()
+        row.prop(context.scene, "container_width", text="Container Width")
+        row.prop(context.scene, "container_height", text="Container Height")
+        
+        row = layout.row()
+        row.operator("object.run_nesting_algorithm")
+
+
 
 def register():
     bpy.utils.register_class(SimpleUlDimensions)
@@ -67,11 +75,19 @@ def register():
     bpy.types.Scene.project_name = bpy.props.StringProperty(name="Project")
     bpy.types.Scene.material_name = bpy.props.StringProperty(name="Material")
 
+
+    bpy.types.Scene.container_width = bpy.props.IntProperty(name="Container Width")
+    bpy.types.Scene.container_height = bpy.props.IntProperty(name="Container Height")
+
 def unregister():
     bpy.utils.unregister_class(SimplePanel)
     bpy.utils.unregister_class(SimpleUlDimensions)
     del bpy.types.Scene.project_name
     del bpy.types.Scene.material_name
+
+
+    del bpy.types.Scene.container_width
+    del bpy.types.Scene.container_height
 
 if __name__ == "__main__":
     register()
