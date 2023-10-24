@@ -7,7 +7,7 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 class SupabaseLoginPanel(bpy.types.Panel):
-    bl_label = "Supabase Login"
+    bl_label = "Database Login"
     bl_idname = "PT_SupabaseLoginPanel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'

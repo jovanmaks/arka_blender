@@ -178,7 +178,7 @@ class ExportCSVOperator(bpy.types.Operator):
 
 class ToggleEntryOperator(bpy.types.Operator):
     bl_idname = "object.toggle_entry"
-    bl_label = "Toggle Entry"
+    bl_label = "Edge"
     bl_options = {'REGISTER', 'UNDO'}
 
     index: bpy.props.IntProperty()

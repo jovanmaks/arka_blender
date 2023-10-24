@@ -14,13 +14,18 @@ class SimpleUlDimensions(bpy.types.UIList):
         row.label(text=f"{sorted_dims[2]:.2f}")
 
         for i in range(1, 5):
-            toggle_text = "YES" if getattr(item, f'is_toggled_{i}') else "NO"
-            toggle_op = row.operator("object.toggle_entry", text=toggle_text)
+            is_toggled = getattr(item, f'is_toggled_{i}')
+            toggle_icon = "SEQUENCE_COLOR_04" if is_toggled else "SEQUENCE_COLOR_09"
+            
+            label_text = "Long" if i <= 2 else "Short"
+
+            toggle_op = row.operator("object.toggle_entry", icon=toggle_icon, text=label_text)
             toggle_op.index = index
             toggle_op.toggle_id = i
 
         remove_op = layout.operator("object.remove_dimension", text="X")
         remove_op.index = index
+
 
 # Panel
 class SimplePanel(bpy.types.Panel):
