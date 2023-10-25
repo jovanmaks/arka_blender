@@ -66,6 +66,7 @@ class SimplePanel(bpy.types.Panel):
         row = layout.row(align=True)
         row.operator("object.run_project_objects")
         row.operator("object.run_nesting_algorithm")
+        row.operator("object.run_guillotine_algorithm")
 
         # row = layout.row(align=True)
         # row.operator("object.export_csv")

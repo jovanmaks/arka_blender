@@ -8,10 +8,53 @@ Rectangle = namedtuple("Rectangle", ["x", "y", "w", "h"])
 # FreeRect to represent a free area in the container
 Rect = namedtuple("Rect", ["x", "y", "w", "h"])
 
+def maximal_rectangles_bin_packing(container_width, container_height, rectangles):
+    packed = []
+    free_rects = [Rect(0, 0, container_width, container_height)]
+
+    def can_place_rect(free_rect, rect_w, rect_h):
+        return free_rect.w >= rect_w and free_rect.h >= rect_h
+
+    for rect_w, rect_h in rectangles:
+        best_score = float('inf')
+        best_rect = None
+
+        for free_rect in free_rects:
+            if can_place_rect(free_rect, rect_w, rect_h):
+                score = free_rect.w * free_rect.h
+                if score < best_score:
+                    best_score = score
+                    best_rect = free_rect
+
+        if best_rect is None:
+            continue
+
+        packed_rect = Rect(best_rect.x, best_rect.y, rect_w, rect_h)
+        packed.append(packed_rect)
+
+        new_free_rects = []
+        for free_rect in free_rects:
+            new_rects = [
+                Rect(free_rect.x, best_rect.y + rect_h, free_rect.w, free_rect.h - (best_rect.y + rect_h - free_rect.y)),
+                Rect(best_rect.x + rect_w, free_rect.y, free_rect.w - (best_rect.x + rect_w - free_rect.x), free_rect.h)
+            ]
+
+            for new_rect in new_rects:
+                if new_rect.w > 0 and new_rect.h > 0:
+                    new_free_rects.append(new_rect)
+
+        free_rects = new_free_rects
+
+    return packed
+
+
+
 def guillotine_bin_packing(container_width, container_height, rectangles):
     packed = []
     free_rects = [Rect(0, 0, container_width, container_height)]
-    new_free_rects = []
+    
+    def is_overlapping(r1, r2):
+        return not (r1.x + r1.w <= r2.x or r1.x >= r2.x + r2.w or r1.y + r1.h <= r2.y or r1.y >= r2.y + r2.h)
 
     for w, h in rectangles:
         best_rect_idx, best_x, best_y, best_area = -1, None, None, None
@@ -30,12 +73,20 @@ def guillotine_bin_packing(container_width, container_height, rectangles):
         packed.append(Rect(best_x, best_y, w, h))
         best_rect = free_rects.pop(best_rect_idx)
 
-        new_free_rects.append(Rect(best_rect.x + w, best_y, best_rect.w - w, h))
-        new_free_rects.append(Rect(best_x, best_rect.y + h, w, best_rect.h - h))
+        new_free_rect1 = Rect(best_rect.x + w, best_y, best_rect.w - w, h)
+        new_free_rect2 = Rect(best_x, best_rect.y + h, w, best_rect.h - h)
 
-        free_rects = [rect for rect in free_rects if not (rect.x >= best_x and rect.y >= best_y and rect.x + rect.w <= best_x + w and rect.y + rect.h <= best_y + h)]
-        free_rects.extend(new_free_rects)
-        new_free_rects.clear()
+        # Check if new free rectangles overlap with existing ones
+        for r in free_rects:
+            if is_overlapping(new_free_rect1, r):
+                new_free_rect1 = None
+            if is_overlapping(new_free_rect2, r):
+                new_free_rect2 = None
+
+        if new_free_rect1:
+            free_rects.append(new_free_rect1)
+        if new_free_rect2:
+            free_rects.append(new_free_rect2)
 
     return packed
 
@@ -48,7 +99,7 @@ def _no_overlap(x1, y1, w1, h1, rect2, container_width, container_height):
 
 class RunNestingAlgorithmOperator(bpy.types.Operator):
     bl_idname = "object.run_nesting_algorithm"
-    bl_label = "Pack"
+    bl_label = "Max rect"
 
     def execute(self, context):
         container_width = context.scene.container_width
@@ -64,9 +115,73 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
             # rectangles.append((scaled_w, scaled_h))
             rectangles.append((int(sorted_dims[1]), int(sorted_dims[2])))
 
-        pdb.set_trace()
+        # pdb.set_trace()
+        result = maximal_rectangles_bin_packing(container_width, container_height, rectangles)
+        # pdb.set_trace()
+
+        scale_factor = 0.01  # Adjust this as needed
+        # Create a new collection for the planes
+        plane_collection = bpy.data.collections.new("Packed Planes")
+        bpy.context.scene.collection.children.link(plane_collection)
+
+        for x, y, w, h in result:
+            bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(x + w / 2, y + h / 2, 0))
+            bpy.context.object.scale.x = w
+            bpy.context.object.scale.y = h
+
+            # Link the object to the new collection
+            plane_collection.objects.link(bpy.context.object)
+            bpy.context.collection.objects.unlink(bpy.context.object)
+
+        # Set 3D cursor to a base point, let's say (0, 0, 0)
+        bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
+
+        # Set the pivot point to the 3D cursor
+        bpy.context.scene.tool_settings.transform_pivot_point = 'CURSOR'
+
+        # Select all objects in the collection
+        bpy.ops.object.select_all(action='DESELECT')
+        for obj in plane_collection.objects:
+            obj.select_set(True)
+
+        # Scale them together
+        scale_factor = 0.01  # Replace this with the scale factor you want
+        bpy.ops.transform.resize(value=(scale_factor, scale_factor, scale_factor))
+
+        # Reset the pivot point if necessary
+        bpy.context.scene.tool_settings.transform_pivot_point = 'MEDIAN_POINT'
+
+        # This is the big plane
+        bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(container_width / 200, container_height / 200, 0))
+        bpy.context.object.scale.x = container_width / 100
+        bpy.context.object.scale.y = container_height / 100
+        
+
+        return {'FINISHED'}
+
+
+
+class RunGuillotineAlgorithmOperator(bpy.types.Operator):
+    bl_idname = "object.run_guillotine_algorithm"
+    bl_label = "Guillotine"
+
+    def execute(self, context):
+        container_width = context.scene.container_width
+        container_height = context.scene.container_height
+        rectangles = []
+
+        # scale_factor = 1/10   # adjust this as needed
+
+        for entry in context.scene.dimension_entries:
+            sorted_dims = sorted([entry.width, entry.height, entry.length])
+            # scaled_w = int(sorted_dims[1] * scale_factor)
+            # scaled_h = int(sorted_dims[2] * scale_factor)
+            # rectangles.append((scaled_w, scaled_h))
+            rectangles.append((int(sorted_dims[1]), int(sorted_dims[2])))
+
+        # pdb.set_trace()
         result = guillotine_bin_packing(container_width, container_height, rectangles)
-        pdb.set_trace()
+        # pdb.set_trace()
 
         scale_factor = 0.01  # Adjust this as needed
         # Create a new collection for the planes
@@ -150,10 +265,12 @@ class RunProjectObjectsOperator(bpy.types.Operator):
 
 def register():
     bpy.utils.register_class(RunNestingAlgorithmOperator)
+    bpy.utils.register_class(RunGuillotineAlgorithmOperator)
     bpy.utils.register_class(RunProjectObjectsOperator)
 
 def unregister():
     bpy.utils.unregister_class(RunNestingAlgorithmOperator)
+    bpy.utils.unregister_class(RunGuillotineAlgorithmOperator)
     bpy.utils.unregister_class(RunProjectObjectsOperator)
 
 if __name__ == "__main__":
