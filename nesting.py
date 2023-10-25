@@ -1,24 +1,43 @@
 import bpy
 from collections import namedtuple
+import pdb
 
 # NamedTuple to represent a rectangle
 Rectangle = namedtuple("Rectangle", ["x", "y", "w", "h"])
 
-# Greedy algorithm for nesting rectangles
-def _greedy_nest_rectangles(container_width, container_height, rectangles):
+# FreeRect to represent a free area in the container
+FreeRect = namedtuple("FreeRect", ["x", "y", "w", "h"])
+
+# The Guillotine bin packing algorithm
+def guillotine_bin_packing(container_width, container_height, rectangles):
     packed = []
-    for rect in rectangles:
-        w, h = rect
-        found_spot = False
-        for x in range(0, container_width - w + 1):
-            for y in range(0, container_height - h + 1):
-                if all(_no_overlap(x, y, w, h, p, container_width, container_height) for p in packed):
-                    print(f"Placing rectangle at {x},{y} of size {w}x{h}")
-                    packed.append(Rectangle(x, y, w, h))
-                    found_spot = True
-                    break
-            if found_spot:
-                break
+    free_rects = [FreeRect(0, 0, container_width, container_height)]
+
+    for w, h in rectangles:
+        best_rect_idx = -1
+        best_x, best_y = 0, 0
+        best_area = float('inf')
+
+        # Find the best spot for this rectangle
+        for i, rect in enumerate(free_rects):
+            if rect.w >= w and rect.h >= h:
+                area = rect.w * rect.h
+                if area < best_area:
+                    best_area = area
+                    best_x, best_y = rect.x, rect.y
+                    best_rect_idx = i
+
+        if best_rect_idx == -1:
+            continue  # Couldn't find a spot, skipping
+
+        # Place the rectangle
+        packed.append(Rectangle(best_x, best_y, w, h))
+
+        # Update free rectangles
+        free_rect = free_rects.pop(best_rect_idx)
+        free_rects.append(FreeRect(free_rect.x + w, free_rect.y, free_rect.w - w, h))
+        free_rects.append(FreeRect(free_rect.x, free_rect.y + h, w, free_rect.h - h))
+
     return packed
 
 # Check for overlapping rectangles and also if it goes out of the container
@@ -33,22 +52,46 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
     bl_label = "Pack"
 
     def execute(self, context):
-        container_width = context.scene.container_width
+        pdb.set_trace()
+        container_width = context.scene.container_widthcon
         container_height = context.scene.container_height
         rectangles = []
 
+        scale_factor = 1/10   # adjust this as needed
+
         for entry in context.scene.dimension_entries:
             sorted_dims = sorted([entry.width, entry.height, entry.length])
-            rectangles.append((int(sorted_dims[1]), int(sorted_dims[2])))
+            print("Sorted dimensions:", sorted_dims)  # Debug line
+            scaled_w = int(sorted_dims[1] * scale_factor)
+            scaled_h = int(sorted_dims[2] * scale_factor)
+            print("scaled_w:", scaled_w, "scaled_h:", scaled_h)  # Debug line
+            rectangles.append((scaled_w, scaled_h))
 
-        result = _greedy_nest_rectangles(container_width, container_height, rectangles)
+        pdb.set_trace()
+        result = guillotine_bin_packing(container_width, container_height, rectangles)
+        pdb.set_trace()
 
         for x, y, w, h in result:
-            bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(x + w / 2, y + h / 2, 0))
-            bpy.context.object.scale[0] = w/100  # Removed the division by 2
-            bpy.context.object.scale[1] = h/100  # Removed the division by 2
+            pdb.set_trace()
+            # Create a plane at the origin
+            bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(0, 0, 0))
+            
+            # Then translate it to the correct position
+            bpy.context.object.location.x = x + w / 2
+            bpy.context.object.location.y = y + h / 2
+
+            # Scale it after translation
+            bpy.context.object.scale.x = w
+            bpy.context.object.scale.y = h
+
+
+        bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(container_width / 2, container_height / 2, 0))
+        bpy.context.object.scale.x = container_width
+        bpy.context.object.scale.y = container_height
+        
 
         return {'FINISHED'}
+
 
 class RunProjectObjectsOperator(bpy.types.Operator):
     bl_idname = "object.run_project_objects"
