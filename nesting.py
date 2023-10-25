@@ -6,37 +6,36 @@ import pdb
 Rectangle = namedtuple("Rectangle", ["x", "y", "w", "h"])
 
 # FreeRect to represent a free area in the container
-FreeRect = namedtuple("FreeRect", ["x", "y", "w", "h"])
+Rect = namedtuple("Rect", ["x", "y", "w", "h"])
 
-# The Guillotine bin packing algorithm
 def guillotine_bin_packing(container_width, container_height, rectangles):
     packed = []
-    free_rects = [FreeRect(0, 0, container_width, container_height)]
+    free_rects = [Rect(0, 0, container_width, container_height)]
+    new_free_rects = []
 
     for w, h in rectangles:
-        best_rect_idx = -1
-        best_x, best_y = 0, 0
-        best_area = float('inf')
+        best_rect_idx, best_x, best_y, best_area = -1, None, None, None
 
-        # Find the best spot for this rectangle
         for i, rect in enumerate(free_rects):
             if rect.w >= w and rect.h >= h:
                 area = rect.w * rect.h
-                if area < best_area:
+                if best_area is None or area < best_area:
                     best_area = area
                     best_x, best_y = rect.x, rect.y
                     best_rect_idx = i
 
         if best_rect_idx == -1:
-            continue  # Couldn't find a spot, skipping
+            continue
 
-        # Place the rectangle
-        packed.append(Rectangle(best_x, best_y, w, h))
+        packed.append(Rect(best_x, best_y, w, h))
+        best_rect = free_rects.pop(best_rect_idx)
 
-        # Update free rectangles
-        free_rect = free_rects.pop(best_rect_idx)
-        free_rects.append(FreeRect(free_rect.x + w, free_rect.y, free_rect.w - w, h))
-        free_rects.append(FreeRect(free_rect.x, free_rect.y + h, w, free_rect.h - h))
+        new_free_rects.append(Rect(best_rect.x + w, best_y, best_rect.w - w, h))
+        new_free_rects.append(Rect(best_x, best_rect.y + h, w, best_rect.h - h))
+
+        free_rects = [rect for rect in free_rects if not (rect.x >= best_x and rect.y >= best_y and rect.x + rect.w <= best_x + w and rect.y + rect.h <= best_y + h)]
+        free_rects.extend(new_free_rects)
+        new_free_rects.clear()
 
     return packed
 
@@ -52,42 +51,59 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
     bl_label = "Pack"
 
     def execute(self, context):
-        pdb.set_trace()
-        container_width = context.scene.container_widthcon
+        container_width = context.scene.container_width
         container_height = context.scene.container_height
         rectangles = []
 
-        scale_factor = 1/10   # adjust this as needed
+        # scale_factor = 1/10   # adjust this as needed
 
         for entry in context.scene.dimension_entries:
             sorted_dims = sorted([entry.width, entry.height, entry.length])
-            print("Sorted dimensions:", sorted_dims)  # Debug line
-            scaled_w = int(sorted_dims[1] * scale_factor)
-            scaled_h = int(sorted_dims[2] * scale_factor)
-            print("scaled_w:", scaled_w, "scaled_h:", scaled_h)  # Debug line
-            rectangles.append((scaled_w, scaled_h))
+            # scaled_w = int(sorted_dims[1] * scale_factor)
+            # scaled_h = int(sorted_dims[2] * scale_factor)
+            # rectangles.append((scaled_w, scaled_h))
+            rectangles.append((int(sorted_dims[1]), int(sorted_dims[2])))
 
         pdb.set_trace()
         result = guillotine_bin_packing(container_width, container_height, rectangles)
         pdb.set_trace()
 
-        for x, y, w, h in result:
-            pdb.set_trace()
-            # Create a plane at the origin
-            bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(0, 0, 0))
-            
-            # Then translate it to the correct position
-            bpy.context.object.location.x = x + w / 2
-            bpy.context.object.location.y = y + h / 2
+        scale_factor = 0.01  # Adjust this as needed
+        # Create a new collection for the planes
+        plane_collection = bpy.data.collections.new("Packed Planes")
+        bpy.context.scene.collection.children.link(plane_collection)
 
-            # Scale it after translation
+        for x, y, w, h in result:
+            bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(x + w / 2, y + h / 2, 0))
             bpy.context.object.scale.x = w
             bpy.context.object.scale.y = h
 
+            # Link the object to the new collection
+            plane_collection.objects.link(bpy.context.object)
+            bpy.context.collection.objects.unlink(bpy.context.object)
 
-        bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(container_width / 2, container_height / 2, 0))
-        bpy.context.object.scale.x = container_width
-        bpy.context.object.scale.y = container_height
+        # Set 3D cursor to a base point, let's say (0, 0, 0)
+        bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
+
+        # Set the pivot point to the 3D cursor
+        bpy.context.scene.tool_settings.transform_pivot_point = 'CURSOR'
+
+        # Select all objects in the collection
+        bpy.ops.object.select_all(action='DESELECT')
+        for obj in plane_collection.objects:
+            obj.select_set(True)
+
+        # Scale them together
+        scale_factor = 0.01  # Replace this with the scale factor you want
+        bpy.ops.transform.resize(value=(scale_factor, scale_factor, scale_factor))
+
+        # Reset the pivot point if necessary
+        bpy.context.scene.tool_settings.transform_pivot_point = 'MEDIAN_POINT'
+
+        # This is the big plane
+        bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(container_width / 200, container_height / 200, 0))
+        bpy.context.object.scale.x = container_width / 100
+        bpy.context.object.scale.y = container_height / 100
         
 
         return {'FINISHED'}
