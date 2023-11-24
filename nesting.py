@@ -8,7 +8,7 @@ Rectangle = namedtuple("Rectangle", ["x", "y", "w", "h"])
 # FreeRect to represent a free area in the container
 Rect = namedtuple("Rect", ["x", "y", "w", "h"])
 
-def maximal_rectangles_bin_packing(container_width, container_height, rectangles):
+def maximal_rectangles_bin_packing(container_width, container_height, rectangles, spacing=0):
     packed = []
     free_rects = [Rect(0, 0, container_width, container_height)]
 
@@ -16,6 +16,9 @@ def maximal_rectangles_bin_packing(container_width, container_height, rectangles
         return free_rect.w >= rect_w and free_rect.h >= rect_h
 
     for rect_w, rect_h in rectangles:
+        rect_w_with_spacing = rect_w + spacing
+        rect_h_with_spacing = rect_h + spacing
+
         best_score = float('inf')
         best_rect = None
 
@@ -35,8 +38,8 @@ def maximal_rectangles_bin_packing(container_width, container_height, rectangles
         new_free_rects = []
         for free_rect in free_rects:
             new_rects = [
-                Rect(free_rect.x, best_rect.y + rect_h, free_rect.w, free_rect.h - (best_rect.y + rect_h - free_rect.y)),
-                Rect(best_rect.x + rect_w, free_rect.y, free_rect.w - (best_rect.x + rect_w - free_rect.x), free_rect.h)
+                Rect(free_rect.x, best_rect.y + rect_h_with_spacing, free_rect.w, free_rect.h - (best_rect.y + rect_h_with_spacing - free_rect.y)),
+                Rect(best_rect.x + rect_w_with_spacing, free_rect.y, free_rect.w - (best_rect.x + rect_w_with_spacing - free_rect.x), free_rect.h)
             ]
 
             for new_rect in new_rects:
@@ -49,7 +52,7 @@ def maximal_rectangles_bin_packing(container_width, container_height, rectangles
 
 
 
-def guillotine_bin_packing(container_width, container_height, rectangles):
+def guillotine_bin_packing(container_width, container_height, rectangles, spacing=0):
     packed = []
     free_rects = [Rect(0, 0, container_width, container_height)]
     
@@ -57,6 +60,9 @@ def guillotine_bin_packing(container_width, container_height, rectangles):
         return not (r1.x + r1.w <= r2.x or r1.x >= r2.x + r2.w or r1.y + r1.h <= r2.y or r1.y >= r2.y + r2.h)
 
     for w, h in rectangles:
+        w_with_spacing = w + spacing
+        h_with_spacing = h + spacing
+
         best_rect_idx, best_x, best_y, best_area = -1, None, None, None
 
         for i, rect in enumerate(free_rects):
@@ -73,8 +79,9 @@ def guillotine_bin_packing(container_width, container_height, rectangles):
         packed.append(Rect(best_x, best_y, w, h))
         best_rect = free_rects.pop(best_rect_idx)
 
-        new_free_rect1 = Rect(best_rect.x + w, best_y, best_rect.w - w, h)
-        new_free_rect2 = Rect(best_x, best_rect.y + h, w, best_rect.h - h)
+        new_free_rect1 = Rect(best_rect.x + w_with_spacing, best_y, best_rect.w - w_with_spacing, h)
+        new_free_rect2 = Rect(best_x, best_rect.y + h_with_spacing, w, best_rect.h - h_with_spacing)
+
 
         # Check if new free rectangles overlap with existing ones
         for r in free_rects:
@@ -104,6 +111,8 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
     def execute(self, context):
         container_width = context.scene.container_width
         container_height = context.scene.container_height
+        # spacing = 0.5
+        spacing = context.scene.spacing
         rectangles = []
 
         # scale_factor = 1/10   # adjust this as needed
@@ -116,7 +125,7 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
             rectangles.append((int(sorted_dims[1]), int(sorted_dims[2])))
 
         # pdb.set_trace()
-        result = maximal_rectangles_bin_packing(container_width, container_height, rectangles)
+        result = maximal_rectangles_bin_packing(container_width, container_height, rectangles, spacing)
         # pdb.set_trace()
 
         scale_factor = 0.01  # Adjust this as needed
@@ -168,19 +177,17 @@ class RunGuillotineAlgorithmOperator(bpy.types.Operator):
     def execute(self, context):
         container_width = context.scene.container_width
         container_height = context.scene.container_height
+        spacing = context.scene.spacing
         rectangles = []
 
         # scale_factor = 1/10   # adjust this as needed
 
         for entry in context.scene.dimension_entries:
             sorted_dims = sorted([entry.width, entry.height, entry.length])
-            # scaled_w = int(sorted_dims[1] * scale_factor)
-            # scaled_h = int(sorted_dims[2] * scale_factor)
-            # rectangles.append((scaled_w, scaled_h))
             rectangles.append((int(sorted_dims[1]), int(sorted_dims[2])))
 
         # pdb.set_trace()
-        result = guillotine_bin_packing(container_width, container_height, rectangles)
+        result = guillotine_bin_packing(container_width, container_height, rectangles,spacing)
         # pdb.set_trace()
 
         scale_factor = 0.01  # Adjust this as needed
@@ -226,11 +233,13 @@ class RunGuillotineAlgorithmOperator(bpy.types.Operator):
 
 class RunProjectObjectsOperator(bpy.types.Operator):
     bl_idname = "object.run_project_objects"
-    bl_label = "Project"
+    bl_label = "Strip"
 
     def execute(self, context):
         rectangles = []
         next_x, next_y = 0, 0  # Initialize start positions
+        # spacing = 0.5
+        spacing = context.scene.spacing / 10    
 
         # Use dimension_entries for the dimensions
         for entry in context.scene.dimension_entries:
@@ -252,7 +261,7 @@ class RunProjectObjectsOperator(bpy.types.Operator):
             bpy.context.object.location.y = next_y + (h / 2) / 100
 
             # Update the next start position (convert w from Blender units to your units)
-            next_x += w / 100
+            next_x += (w / 100) + spacing
 
             # Optional: you can add some "spacing" between each tile if you like
             # next_x += (w / 100) + 0.05  # 0.05 units of spacing

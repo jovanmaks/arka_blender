@@ -147,7 +147,7 @@ class ExportCSVOperator(bpy.types.Operator):
             csvwriter = csv.writer(csvfile)
 
             # Write the header with an extra 'Material' column
-            csvwriter.writerow([ 'Ime', 'Duza', 'Kraca', 'Debljina', 'Obrada', 'Material'])
+            csvwriter.writerow([ 'Name', 'Longer', 'Shorter', 'Thickness', 'Edges', 'Material'])
 
             # Write the dimensions
             for entry in context.scene.dimension_entries:

@@ -6,8 +6,10 @@ class SimpleUlDimensions(bpy.types.UIList):
         sorted_dims = sorted([item.width, item.height, item.length], reverse=True)
         sorted_dims = [round(x, 2) for x in sorted_dims]
         
+        # Split the layout and add the index as a label
         layout = layout.split(factor=0.8)
         row = layout.row()
+        row.label(text=f"{index + 1}")  # Add +1 to index for human-readable numbering (starting from 1)
         row.label(text=f"{item.name}")
         row.label(text=f"{sorted_dims[0]:.2f}")
         row.label(text=f"{sorted_dims[1]:.2f}")
@@ -60,8 +62,9 @@ class SimplePanel(bpy.types.Panel):
         row.operator("object.export_csv")
 
         row = layout.row()
-        row.prop(context.scene, "container_width", text="Container Width")
-        row.prop(context.scene, "container_height", text="Container Height")
+        row.prop(context.scene, "container_width", text="Container Width(cm)")
+        row.prop(context.scene, "container_height", text="Container Height(cm)")
+        row.prop(context.scene, "spacing", text="Spacing")
         
         row = layout.row(align=True)
         row.operator("object.run_project_objects")
@@ -79,6 +82,7 @@ def register():
 
     bpy.types.Scene.project_name = bpy.props.StringProperty(name="Project")
     bpy.types.Scene.material_name = bpy.props.StringProperty(name="Material")
+    bpy.types.Scene.spacing = bpy.props.IntProperty(name="Spacing")
 
 
     bpy.types.Scene.container_width = bpy.props.IntProperty(name="Container Width")
@@ -90,6 +94,7 @@ def unregister():
     bpy.utils.unregister_class(SimpleUlDimensions)
     del bpy.types.Scene.project_name
     del bpy.types.Scene.material_name
+    del bpy.types.Scene.spacing
 
 
     del bpy.types.Scene.container_width
