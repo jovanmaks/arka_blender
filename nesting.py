@@ -239,7 +239,7 @@ class RunProjectObjectsOperator(bpy.types.Operator):
         rectangles = []
         next_x, next_y = 0, 0  # Initialize start positions
         # spacing = 0.5
-        spacing = context.scene.spacing / 10    
+        spacing = context.scene.spacing / 100 # uniti su po defaultu u metrima
 
         # Use dimension_entries for the dimensions
         for entry in context.scene.dimension_entries:
