@@ -1,6 +1,7 @@
 import bpy
 from collections import namedtuple
 import pdb
+from .rectpack import newPacker
 
 # NamedTuple to represent a rectangle
 Rectangle = namedtuple("Rectangle", ["x", "y", "w", "h"])
@@ -59,6 +60,7 @@ def guillotine_bin_packing(container_width, container_height, rectangles, spacin
     def is_overlapping(r1, r2):
         return not (r1.x + r1.w <= r2.x or r1.x >= r2.x + r2.w or r1.y + r1.h <= r2.y or r1.y >= r2.y + r2.h)
 
+    # pdb.set_trace()
     for w, h in rectangles:
         w_with_spacing = w + spacing
         h_with_spacing = h + spacing
@@ -104,71 +106,52 @@ def _no_overlap(x1, y1, w1, h1, rect2, container_width, container_height):
     within_bounds = x1 + w1 <= container_width and y1 + h1 <= container_height
     return no_overlap and within_bounds
 
+
+
+
 class RunNestingAlgorithmOperator(bpy.types.Operator):
     bl_idname = "object.run_nesting_algorithm"
-    bl_label = "Max rect"
+    bl_label = "Max rect with rectpack"
 
     def execute(self, context):
         container_width = context.scene.container_width
         container_height = context.scene.container_height
-        # spacing = 0.5
         spacing = context.scene.spacing
+
+        # Retrieve rectangle dimensions
         rectangles = []
-
-        # scale_factor = 1/10   # adjust this as needed
-
         for entry in context.scene.dimension_entries:
             sorted_dims = sorted([entry.width, entry.height, entry.length])
-            # scaled_w = int(sorted_dims[1] * scale_factor)
-            # scaled_h = int(sorted_dims[2] * scale_factor)
-            # rectangles.append((scaled_w, scaled_h))
             rectangles.append((int(sorted_dims[1]), int(sorted_dims[2])))
 
         # pdb.set_trace()
-        result = maximal_rectangles_bin_packing(container_width, container_height, rectangles, spacing)
-        # pdb.set_trace()
+        # Initialize packer and add rectangles and bins
+        packer = newPacker()
+        for r in rectangles:
+            packer.add_rect(*r)
+        packer.add_bin(container_width, container_height)
 
-        scale_factor = 0.01  # Adjust this as needed
+        # Start packing
+        packer.pack()
+
         # Create a new collection for the planes
         plane_collection = bpy.data.collections.new("Packed Planes")
         bpy.context.scene.collection.children.link(plane_collection)
-
-        for x, y, w, h in result:
-            bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(x + w / 2, y + h / 2, 0))
-            bpy.context.object.scale.x = w
-            bpy.context.object.scale.y = h
-
-            # Link the object to the new collection
-            plane_collection.objects.link(bpy.context.object)
-            bpy.context.collection.objects.unlink(bpy.context.object)
-
-        # Set 3D cursor to a base point, let's say (0, 0, 0)
-        bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
-
-        # Set the pivot point to the 3D cursor
-        bpy.context.scene.tool_settings.transform_pivot_point = 'CURSOR'
-
-        # Select all objects in the collection
-        bpy.ops.object.select_all(action='DESELECT')
-        for obj in plane_collection.objects:
-            obj.select_set(True)
-
-        # Scale them together
-        scale_factor = 0.01  # Replace this with the scale factor you want
-        bpy.ops.transform.resize(value=(scale_factor, scale_factor, scale_factor))
-
-        # Reset the pivot point if necessary
-        bpy.context.scene.tool_settings.transform_pivot_point = 'MEDIAN_POINT'
-
-        # This is the big plane
-        bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(container_width / 200, container_height / 200, 0))
-        bpy.context.object.scale.x = container_width / 100
-        bpy.context.object.scale.y = container_height / 100
         
+        # pdb.set_trace()
+        # Process packed rectangles and place them as planes
+        for abin in packer:
+            for rect in abin:
+                x, y, w, h = rect.x, rect.y, rect.width, rect.height
+                bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(x + w / 2, y + h / 2, 0))
+                bpy.context.object.scale.x = w
+                bpy.context.object.scale.y = h
+
+                # Link the object to the new collection
+                plane_collection.objects.link(bpy.context.object)
+                bpy.context.collection.objects.unlink(bpy.context.object)
 
         return {'FINISHED'}
-
-
 
 class RunGuillotineAlgorithmOperator(bpy.types.Operator):
     bl_idname = "object.run_guillotine_algorithm"
@@ -230,7 +213,7 @@ class RunGuillotineAlgorithmOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
-
+# Ovaj dio projektuje geometriju linearno u strip
 class RunProjectObjectsOperator(bpy.types.Operator):
     bl_idname = "object.run_project_objects"
     bl_label = "Strip"
