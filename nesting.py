@@ -116,13 +116,20 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
     def execute(self, context):
         container_width = context.scene.container_width
         container_height = context.scene.container_height
-        spacing = context.scene.spacing
+        spacing = context.scene.spacing     
 
-        # Retrieve rectangle dimensions
+        # # Retrieve rectangle dimensions
+        # rectangles = []
+        # for entry in context.scene.dimension_entries:
+        #     sorted_dims = sorted([entry.width, entry.height, entry.length])
+        #     rectangles.append((int(sorted_dims[1]), int(sorted_dims[2])))
+
         rectangles = []
         for entry in context.scene.dimension_entries:
             sorted_dims = sorted([entry.width, entry.height, entry.length])
-            rectangles.append((int(sorted_dims[1]), int(sorted_dims[2])))
+            rect_width_with_spacing = int(sorted_dims[1]) + spacing
+            rect_height_with_spacing = int(sorted_dims[2]) + spacing
+            rectangles.append((rect_width_with_spacing, rect_height_with_spacing))
 
         # pdb.set_trace()
         # Initialize packer and add rectangles and bins
@@ -138,20 +145,40 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
         plane_collection = bpy.data.collections.new("Packed Planes")
         bpy.context.scene.collection.children.link(plane_collection)
         
+        # This is the big plane
+        bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(container_width / 200, container_height / 200, 0))
+        bpy.context.object.scale.x = container_width / 100
+        bpy.context.object.scale.y = container_height / 100
+
         # pdb.set_trace()
-        # Process packed rectangles and place them as planes
+       # Process packed rectangles and place them as planes without spacing
         for abin in packer:
             for rect in abin:
                 x, y, w, h = rect.x, rect.y, rect.width, rect.height
-                bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(x + w / 2, y + h / 2, 0))
-                bpy.context.object.scale.x = w
-                bpy.context.object.scale.y = h
+
+                # Subtract spacing to get original dimensions for drawing
+                original_w = w - spacing
+                original_h = h - spacing
+
+                # Scale the dimensions for drawing
+                scaled_w = original_w / 100
+                scaled_h = original_h / 100
+
+                # Calculate the scaled position
+                scaled_x = (x / 100) 
+                scaled_y = (y / 100)
+
+                # Create the plane at the scaled position
+                bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(scaled_x + scaled_w / 2, scaled_y + scaled_h / 2, 0))
+                bpy.context.object.scale.x = scaled_w
+                bpy.context.object.scale.y = scaled_h
 
                 # Link the object to the new collection
                 plane_collection.objects.link(bpy.context.object)
                 bpy.context.collection.objects.unlink(bpy.context.object)
 
         return {'FINISHED'}
+
 
 class RunGuillotineAlgorithmOperator(bpy.types.Operator):
     bl_idname = "object.run_guillotine_algorithm"
