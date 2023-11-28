@@ -1,4 +1,67 @@
 import bpy
+# from .rectpack.packer import PackingMode  
+
+# Define the options for each EnumProperty
+mode_items = [
+    ('PackingMode.Offline', "Offline", "PackingMode.Offline"),
+    # ('PackingMode.Online', "Online", "PackingMode.Online")
+]
+
+bin_algo_items = [
+    ('BNF', "Bin Next Fit", "PackingBin.BNF"),
+    ('BFF', "Bin First Fit", "PackingBin.BFF"),
+    ('BBF', "Bin Best Fit", "PackingBin.BBF"),
+    ('Global', "Global", "PackingBin.Global")
+]
+
+pack_algo_items = [
+    # MaxRects variants
+    ('MaxRectsBl', "MaxRects Bottom-Left", "MaxRectsBl"),
+    ('MaxRectsBssf', "MaxRects Best Short Side Fit", "MaxRectsBssf"),
+    ('MaxRectsBaf', "MaxRects Best Area Fit", "MaxRectsBaf"),
+    ('MaxRectsBlsf', "MaxRects Best Long Side Fit", "MaxRectsBlsf"),
+    # Skyline variants
+    ('SkylineBl', "Skyline Bottom-Left", "SkylineBl"),
+    ('SkylineBlWm', "Skyline Bottom-Left WasteMap", "SkylineBlWm"),
+    ('SkylineMwf', "Skyline Min Waste Fit", "SkylineMwf"),
+    ('SkylineMwfl', "Skyline Min Waste Fit Level", "SkylineMwfl"),
+    ('SkylineMwfWm', "Skyline Min Waste Fit WasteMap", "SkylineMwfWm"),
+    ('SkylineMwflWm', "Skyline Min Waste Fit Level WasteMap", "SkylineMwflWm"),
+    # Guillotine variants
+    ('GuillotineBssfSas', "Guillotine BSSF Split Shorter Axis", "GuillotineBssfSas"),
+    ('GuillotineBssfLas', "Guillotine BSSF Split Longer Axis", "GuillotineBssfLas"),
+    ('GuillotineBssfSlas', "Guillotine BSSF Split Longer Axis Shorter Leftover", "GuillotineBssfSlas"),
+    ('GuillotineBssfLlas', "Guillotine BSSF Split Longer Axis Longer Leftover", "GuillotineBssfLlas"),
+    ('GuillotineBssfMaxas', "Guillotine BSSF Split Max Axis", "GuillotineBssfMaxas"),
+    ('GuillotineBssfMinas', "Guillotine BSSF Split Min Axis", "GuillotineBssfMinas"),
+    ('GuillotineBlsfSas', "Guillotine BLSF Split Shorter Axis", "GuillotineBlsfSas"),
+    ('GuillotineBlsfLas', "Guillotine BLSF Split Longer Axis", "GuillotineBlsfLas"),
+    ('GuillotineBlsfSlas', "Guillotine BLSF Split Longer Axis Shorter Leftover", "GuillotineBlsfSlas"),
+    ('GuillotineBlsfLlas', "Guillotine BLSF Split Longer Axis Longer Leftover", "GuillotineBlsfLlas"),
+    ('GuillotineBlsfMaxas', "Guillotine BLSF Split Max Axis", "GuillotineBlsfMaxas"),
+    ('GuillotineBlsfMinas', "Guillotine BLSF Split Min Axis", "GuillotineBlsfMinas"),
+    ('GuillotineBafSas', "Guillotine BAF Split Shorter Axis", "GuillotineBafSas"),
+    ('GuillotineBafLas', "Guillotine BAF Split Longer Axis", "GuillotineBafLas"),
+    ('GuillotineBafSlas', "Guillotine BAF Split Longer Axis Shorter Leftover", "GuillotineBafSlas"),
+    ('GuillotineBafLlas', "Guillotine BAF Split Longer Axis Longer Leftover", "GuillotineBafLlas"),
+    ('GuillotineBafMaxas', "Guillotine BAF Split Max Axis", "GuillotineBafMaxas"),
+    ('GuillotineBafMinas', "Guillotine BAF Split Min Axis", "GuillotineBafMinas"),
+]
+
+sort_algo_items = [
+    ('SORT_NONE', "None", "SORT_NONE"),
+    ('SORT_AREA', "Area", "SORT_AREA"),
+    ('SORT_PERI', "Perimeter", "SORT_PERI"),
+    ('SORT_DIFF', "Difference", "SORT_DIFF"),
+    ('SORT_SSIDE', "Short Side", "SORT_SSIDE"),
+    ('SORT_LSIDE', "Long Side", "SORT_LSIDE"),
+    ('SORT_RATIO', "Ratio", "SORT_RATIO")
+]
+
+rotation_items = [
+    ('ENABLED', "Enabled", "Enable rotation"),
+    ('DISABLED', "Disabled", "Disable rotation")
+]
 
 # Custom UI List
 class SimpleUlDimensions(bpy.types.UIList):
@@ -60,20 +123,42 @@ class SimplePanel(bpy.types.Panel):
 
         row = layout.row(align=True)
         row.operator("object.export_csv")
+        row.operator("object.stickers_operator")
 
         row = layout.row()
         row.prop(context.scene, "container_width", text="Container Width(cm)")
         row.prop(context.scene, "container_height", text="Container Height(cm)")
         row.prop(context.scene, "spacing", text="Spacing")
         
+
+        layout.separator()
+        layout.label(text="Packing Options:")
+
+        # Dropdown for mode
+        row = layout.row()
+        row.prop(context.scene, "packing_mode", text="Mode")
+
+        # Dropdown for bin_algo
+        row = layout.row()
+        row.prop(context.scene, "bin_algo", text="Bin Algorithm")
+
+        # Dropdown for pack_algo
+        row = layout.row()
+        row.prop(context.scene, "pack_algo", text="Packing Algorithm")
+
+        # Dropdown for sort_algo
+        row = layout.row()
+        row.prop(context.scene, "sort_algo", text="Sort Algorithm")
+
+        # Dropdown for rotation
+        row = layout.row()
+        row.prop(context.scene, "rotation", text="Rotation")
+        layout.separator()
+
         row = layout.row(align=True)
         row.operator("object.run_project_objects")
         row.operator("object.run_nesting_algorithm")
-        row.operator("object.run_guillotine_algorithm")
-
-        # row = layout.row(align=True)
-        # row.operator("object.export_csv")
-
+        # row.operator("object.run_guillotine_algorithm")
 
 
 def register():
@@ -88,6 +173,12 @@ def register():
     bpy.types.Scene.container_width = bpy.props.IntProperty(name="Container Width")
     bpy.types.Scene.container_height = bpy.props.IntProperty(name="Container Height")
 
+    bpy.types.Scene.packing_mode = bpy.props.EnumProperty(items=mode_items)
+    bpy.types.Scene.bin_algo = bpy.props.EnumProperty(items=bin_algo_items)
+    bpy.types.Scene.pack_algo = bpy.props.EnumProperty(items=pack_algo_items)
+    bpy.types.Scene.sort_algo = bpy.props.EnumProperty(items=sort_algo_items)
+    bpy.types.Scene.rotation = bpy.props.EnumProperty(items=rotation_items)
+
 
 def unregister():
     bpy.utils.unregister_class(SimplePanel)
@@ -99,6 +190,12 @@ def unregister():
 
     del bpy.types.Scene.container_width
     del bpy.types.Scene.container_height
+
+    del bpy.types.Scene.packing_mode
+    del bpy.types.Scene.bin_algo
+    del bpy.types.Scene.pack_algo
+    del bpy.types.Scene.sort_algo
+    del bpy.types.Scene.rotation
 
 
 if __name__ == "__main__":

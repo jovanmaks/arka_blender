@@ -177,6 +177,18 @@ class ExportCSVOperator(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
 
+class StickersOperator(bpy.types.Operator):
+    bl_idname = "object.stickers_operator"
+    bl_label = "Stickers"
+    bl_description = "Placeholder for stickers functionality"
+
+    def execute(self, context):
+        self.report({'INFO'}, "Stickers Operator Placeholder Executed")
+        # Placeholder functionality
+        # Implement your stickers logic here
+        return {'FINISHED'}
+
+
 class ToggleEntryOperator(bpy.types.Operator):
     bl_idname = "object.toggle_entry"
     bl_label = "Edge"
@@ -200,7 +212,8 @@ def register():
     bpy.utils.register_class(RemoveDimensionOperator)
     bpy.utils.register_class(ClearAllDimensionsOperator)
     bpy.utils.register_class(ExportCSVOperator)
-    bpy.utils.register_class(ToggleEntryOperator) 
+    bpy.utils.register_class(StickersOperator)
+    bpy.utils.register_class(ToggleEntryOperator)
 
 def unregister():
     bpy.utils.unregister_class(GetDimensionOperator)
@@ -208,4 +221,5 @@ def unregister():
     bpy.utils.unregister_class(RemoveDimensionOperator)
     bpy.utils.unregister_class(ClearAllDimensionsOperator)
     bpy.utils.unregister_class(ExportCSVOperator)
+    bpy.utils.unregister_class(StickersOperator)
     bpy.utils.unregister_class(ToggleEntryOperator)

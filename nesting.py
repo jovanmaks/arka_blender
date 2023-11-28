@@ -1,7 +1,10 @@
 import bpy
 from collections import namedtuple
 import pdb
-from .rectpack import newPacker
+
+from .rectpack.packer import newPacker, PackingMode, PackingBin, SORT_RATIO # Import necessary constants
+from .rectpack import packer, guillotine, maxrects, skyline
+
 
 # NamedTuple to represent a rectangle
 Rectangle = namedtuple("Rectangle", ["x", "y", "w", "h"])
@@ -111,13 +114,72 @@ def _no_overlap(x1, y1, w1, h1, rect2, container_width, container_height):
 
 class RunNestingAlgorithmOperator(bpy.types.Operator):
     bl_idname = "object.run_nesting_algorithm"
-    bl_label = "Max rect with rectpack"
+    bl_label = "Rectpack"
 
     def execute(self, context):
         container_width = context.scene.container_width
         container_height = context.scene.container_height
         spacing = context.scene.spacing     
 
+
+        mode_str = context.scene.packing_mode
+        try:
+            mode = getattr(PackingMode, mode_str.split('.')[-1])
+        except AttributeError:
+            self.report({'ERROR'}, f"Unknown packing mode: {mode_str}")
+            return {'CANCELLED'}
+
+
+
+        bin_algo_str = context.scene.bin_algo
+        try:
+            bin_algo = getattr(PackingBin, bin_algo_str)
+        except AttributeError:
+            self.report({'ERROR'}, f"Unknown bin algorithm: {bin_algo_str}")
+            return {'CANCELLED'}
+
+
+
+        # pdb.set_trace()
+        pack_algo_str = context.scene.pack_algo
+
+        try:
+            if pack_algo_str.startswith('MaxRects'):
+                pack_algo = getattr(maxrects, pack_algo_str)
+            elif pack_algo_str.startswith('Skyline'):
+                pack_algo = getattr(skyline, pack_algo_str)
+            elif pack_algo_str.startswith('Guillotine'):
+                pack_algo = getattr(guillotine, pack_algo_str)
+            else:
+                raise AttributeError(f"Unknown packing algorithm: {pack_algo_str}")
+
+        except AttributeError as e:
+            self.report({'ERROR'}, str(e))
+            return {'CANCELLED'}
+
+
+
+
+        sort_algo_str = context.scene.sort_algo
+        try:
+            sort_algo = getattr(packer, sort_algo_str)
+        except AttributeError:
+            self.report({'ERROR'}, f"Unknown sort algorithm: {sort_algo_str}")
+            return {'CANCELLED'} 
+
+
+
+        rotation_str = context.scene.rotation
+        if rotation_str == 'ENABLED':
+            rotation = True
+        elif rotation_str == 'DISABLED':
+            rotation = False
+        else:
+            # Handle the case where rotation is neither ENABLED nor DISABLED
+            self.report({'ERROR'}, f"Unknown rotation value: {rotation_str}")
+            return {'CANCELLED'}
+
+   
         # # Retrieve rectangle dimensions
         # rectangles = []
         # for entry in context.scene.dimension_entries:
@@ -132,14 +194,16 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
             rectangles.append((rect_width_with_spacing, rect_height_with_spacing))
 
         # pdb.set_trace()
-        # Initialize packer and add rectangles and bins
-        packer = newPacker()
+        # packer = newPacker()
+        # packer = newPacker(mode=PackingMode.Offline, rotation=rotation)
+        p = newPacker(mode=mode, bin_algo=bin_algo, pack_algo=pack_algo, sort_algo=sort_algo, rotation=rotation)
+
         for r in rectangles:
-            packer.add_rect(*r)
-        packer.add_bin(container_width, container_height)
+            p.add_rect(*r)
+        p.add_bin(container_width, container_height)
 
         # Start packing
-        packer.pack()
+        p.pack()
 
         # Create a new collection for the planes
         plane_collection = bpy.data.collections.new("Packed Planes")
@@ -152,7 +216,7 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
 
         # pdb.set_trace()
        # Process packed rectangles and place them as planes without spacing
-        for abin in packer:
+        for abin in p:
             for rect in abin:
                 x, y, w, h = rect.x, rect.y, rect.width, rect.height
 
@@ -180,65 +244,6 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class RunGuillotineAlgorithmOperator(bpy.types.Operator):
-    bl_idname = "object.run_guillotine_algorithm"
-    bl_label = "Guillotine"
-
-    def execute(self, context):
-        container_width = context.scene.container_width
-        container_height = context.scene.container_height
-        spacing = context.scene.spacing
-        rectangles = []
-
-        # scale_factor = 1/10   # adjust this as needed
-
-        for entry in context.scene.dimension_entries:
-            sorted_dims = sorted([entry.width, entry.height, entry.length])
-            rectangles.append((int(sorted_dims[1]), int(sorted_dims[2])))
-
-        # pdb.set_trace()
-        result = guillotine_bin_packing(container_width, container_height, rectangles,spacing)
-        # pdb.set_trace()
-
-        scale_factor = 0.01  # Adjust this as needed
-        # Create a new collection for the planes
-        plane_collection = bpy.data.collections.new("Packed Planes")
-        bpy.context.scene.collection.children.link(plane_collection)
-
-        for x, y, w, h in result:
-            bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(x + w / 2, y + h / 2, 0))
-            bpy.context.object.scale.x = w
-            bpy.context.object.scale.y = h
-
-            # Link the object to the new collection
-            plane_collection.objects.link(bpy.context.object)
-            bpy.context.collection.objects.unlink(bpy.context.object)
-
-        # Set 3D cursor to a base point, let's say (0, 0, 0)
-        bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
-
-        # Set the pivot point to the 3D cursor
-        bpy.context.scene.tool_settings.transform_pivot_point = 'CURSOR'
-
-        # Select all objects in the collection
-        bpy.ops.object.select_all(action='DESELECT')
-        for obj in plane_collection.objects:
-            obj.select_set(True)
-
-        # Scale them together
-        scale_factor = 0.01  # Replace this with the scale factor you want
-        bpy.ops.transform.resize(value=(scale_factor, scale_factor, scale_factor))
-
-        # Reset the pivot point if necessary
-        bpy.context.scene.tool_settings.transform_pivot_point = 'MEDIAN_POINT'
-
-        # This is the big plane
-        bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(container_width / 200, container_height / 200, 0))
-        bpy.context.object.scale.x = container_width / 100
-        bpy.context.object.scale.y = container_height / 100
-        
-
-        return {'FINISHED'}
 
 # Ovaj dio projektuje geometriju linearno u strip
 class RunProjectObjectsOperator(bpy.types.Operator):
@@ -279,17 +284,14 @@ class RunProjectObjectsOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-
-
-
 def register():
     bpy.utils.register_class(RunNestingAlgorithmOperator)
-    bpy.utils.register_class(RunGuillotineAlgorithmOperator)
+    # bpy.utils.register_class(RunGuillotineAlgorithmOperator)
     bpy.utils.register_class(RunProjectObjectsOperator)
 
 def unregister():
     bpy.utils.unregister_class(RunNestingAlgorithmOperator)
-    bpy.utils.unregister_class(RunGuillotineAlgorithmOperator)
+    # bpy.utils.unregister_class(RunGuillotineAlgorithmOperator)
     bpy.utils.unregister_class(RunProjectObjectsOperator)
 
 if __name__ == "__main__":
