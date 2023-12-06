@@ -121,9 +121,6 @@ class SimplePanel(bpy.types.Panel):
         row = layout.row()
         row.template_list("SimpleUlDimensions", "", context.scene, "dimension_entries", context.scene, "dimension_entries_index", rows=7)
 
-        row = layout.row(align=True)
-        row.operator("object.export_csv")
-        row.operator("object.stickers_operator")
 
         row = layout.row()
         row.prop(context.scene, "container_width", text="Container Width(cm)")
@@ -158,7 +155,11 @@ class SimplePanel(bpy.types.Panel):
         row = layout.row(align=True)
         row.operator("object.run_project_objects")
         row.operator("object.run_nesting_algorithm")
-        # row.operator("object.run_guillotine_algorithm")
+
+        row = layout.row(align=True)
+        row.operator("object.export_csv")
+        row.operator("object.stickers_operator")
+        # row.operator("object.export_canvas")
 
 
 def register():
@@ -183,6 +184,7 @@ def register():
 def unregister():
     bpy.utils.unregister_class(SimplePanel)
     bpy.utils.unregister_class(SimpleUlDimensions)
+
     del bpy.types.Scene.project_name
     del bpy.types.Scene.material_name
     del bpy.types.Scene.spacing

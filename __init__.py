@@ -15,7 +15,7 @@ bl_info = {
         }
 
 from . import operators
-from . import supabaseOperators
+# from . import supabaseOperators
 from . import ui
 from . import properties
 from . import nesting

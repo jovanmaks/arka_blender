@@ -1,6 +1,19 @@
 import bpy
 import csv
 import os
+import sys
+
+# Assuming this script is in the root directory of your plugin
+plugin_path = os.path.dirname(os.path.realpath(__file__))
+pyfpdf_path = os.path.join(plugin_path, 'pyfpdf-binary')
+
+# Add the pyfpdf path to sys.path
+if pyfpdf_path not in sys.path:
+    sys.path.append(pyfpdf_path)
+
+# Now you can import FPDF
+from fpdf import FPDF
+
 
 def set_object_material(obj, color=(0, 1, 0, 1)):  # default color is green
     # Create a new material
@@ -62,6 +75,7 @@ class GetDimensionOperator(bpy.types.Operator):
                 set_object_material(obj)
 
         return {'FINISHED'}
+
 
 
 class RegenerateOperator(bpy.types.Operator):
@@ -129,6 +143,21 @@ class ClearAllDimensionsOperator(bpy.types.Operator):
 
 
 
+class ToggleEntryOperator(bpy.types.Operator):
+    bl_idname = "object.toggle_entry"
+    bl_label = "Edge"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    index: bpy.props.IntProperty()
+    toggle_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        toggle_attr = f'is_toggled_{self.toggle_id}'
+        if hasattr(context.scene.dimension_entries[self.index], toggle_attr):
+            current_state = getattr(context.scene.dimension_entries[self.index], toggle_attr)
+            setattr(context.scene.dimension_entries[self.index], toggle_attr, not current_state)
+        return {'FINISHED'}
+
 class ExportCSVOperator(bpy.types.Operator):
     bl_idname = "object.export_csv"
     bl_label = "CSV"
@@ -180,29 +209,58 @@ class ExportCSVOperator(bpy.types.Operator):
 class StickersOperator(bpy.types.Operator):
     bl_idname = "object.stickers_operator"
     bl_label = "Stickers"
-    bl_description = "Placeholder for stickers functionality"
+    bl_description = "Export stickers as PDFs"
+
+    filepath: bpy.props.StringProperty(
+        subtype="FILE_PATH",
+        name="Save As",
+        description="Save stickers to PDF",
+        default="//untitled.pdf"
+    )
+
+    def draw_and_export_pdf(self, original_width, original_height, filename):
+        """
+        Create a PDF file with a white B6 page and a centered rectangle.
+        """
+        # B6 size in mm
+        b6_width, b6_height = 176, 125
+
+        # Calculate scale to fit the rectangle inside B6 size
+        scale = min(b6_width / original_width, b6_height / original_height)
+        scaled_width, scaled_height = original_width * scale, original_height * scale
+
+        # Calculate position to center the rectangle
+        x_pos = (b6_width - scaled_width) / 2
+        y_pos = (b6_height - scaled_height) / 2
+
+        pdf = FPDF(unit="mm", format=[b6_width, b6_height])
+        pdf.add_page()
+
+         # Set fill color for the rectangle
+        pdf.set_fill_color(0, 255, 0)  # Black color for the rectangle
+        
+      # Draw the centered rectangle (without covering the entire page)
+        pdf.rect(x_pos, y_pos, scaled_width, scaled_height, 'F')
+
+        # Save the PDF
+        pdf.output(filename)
 
     def execute(self, context):
-        self.report({'INFO'}, "Stickers Operator Placeholder Executed")
-        # Placeholder functionality
-        # Implement your stickers logic here
+        pdf_dir = bpy.path.abspath(self.filepath)
+        os.makedirs(pdf_dir, exist_ok=True)
+
+        for entry in context.scene.dimension_entries:
+            width, height = entry.width, entry.height
+            pdf_filename = os.path.join(pdf_dir, f"{entry.name}.pdf")
+            self.draw_and_export_pdf(width, height, pdf_filename)
+
+        self.report({'INFO'}, f"Stickers exported as PDFs to {pdf_dir}")
         return {'FINISHED'}
 
-
-class ToggleEntryOperator(bpy.types.Operator):
-    bl_idname = "object.toggle_entry"
-    bl_label = "Edge"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    index: bpy.props.IntProperty()
-    toggle_id: bpy.props.IntProperty()
-
-    def execute(self, context):
-        toggle_attr = f'is_toggled_{self.toggle_id}'
-        if hasattr(context.scene.dimension_entries[self.index], toggle_attr):
-            current_state = getattr(context.scene.dimension_entries[self.index], toggle_attr)
-            setattr(context.scene.dimension_entries[self.index], toggle_attr, not current_state)
-        return {'FINISHED'}
+    def invoke(self, context, event):
+        # self.filepath = f"{context.scene.project_name}.pdf"
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
 
 
 
