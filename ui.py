@@ -98,7 +98,7 @@ class SimplePanel(bpy.types.Panel):
     bl_idname = "PT_DimensionPanel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = 'Tools'
+    bl_category = 'Arka'
 
     def draw(self, context):
         layout = self.layout

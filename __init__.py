@@ -1,9 +1,9 @@
 bl_info = {
         "name": "Arka",
-        "description": "Plugin for managing plates",
+        "description": "Plugin for bin packing",
         "author": "Noah",
         "version": (1, 0),
-        "blender": (3, 6, 4),
+        "blender": (3, 6, 4),   
         "location": "Properties > Render > My Awesome Panel",
         "warning": "", # used for warning icon and text in add-ons panel
 #         Ovdje ces da stavis link ka dokumentaciji
@@ -22,14 +22,14 @@ from . import nesting
 
 def register():
     operators.register()
-    supabaseOperators.register()
+    # supabaseOperators.register()
     ui.register()
     properties.register()
     nesting.register()
 
 def unregister():
     operators.unregister()
-    supabaseOperators.unregister()
+    # supabaseOperators.unregister()
     ui.unregister()
     properties.unregister()
     nesting.unregister()
