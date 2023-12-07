@@ -218,10 +218,7 @@ class StickersOperator(bpy.types.Operator):
         default="//untitled.pdf"
     )
 
-    def draw_and_export_pdf(self, original_width, original_height, filename, entry, context, scale_down_factor=0.5):
-        """
-        Create a PDF file with a white B6 page, text in the top left corner, and a rectangle positioned below the text.
-        """
+    def draw_and_export_pdf(self, original_width, original_height, original_length, filename, entry, context, index, scale_down_factor=0.5):
         # B6 size in mm
         b6_width, b6_height = 176, 125
 
@@ -232,16 +229,16 @@ class StickersOperator(bpy.types.Operator):
         pdf.set_font("Arial", size=10)
         line_height = 6
 
-        # Retrieve project and material names from the Blender scene context
-        project_name = context.scene.project_name
-        material_name = context.scene.material_name
+        # Sort the dimensions to get the two larger sides
+        sorted_dims = sorted([original_width, original_height, original_length], reverse=True)[:2]
 
-        # Text content
+        # Text content including the index
         texts = [
-            f"Project: {project_name}",
-            f"Material: {material_name}",
+            f"Project: {context.scene.project_name}",
+            f"Material: {context.scene.material_name}",
+            f"Index: {index}",
             f"Name: {entry.name}",
-            f"Dimensions: {entry.width:.1f}x{entry.height:.1f}"
+            f"Dimensions: {sorted_dims[0]:.1f} x {sorted_dims[1]:.1f}"  # Use sorted dimensions
         ]
 
         # Top left corner position for text
@@ -253,19 +250,22 @@ class StickersOperator(bpy.types.Operator):
             pdf.cell(0, line_height, text)
             text_y += line_height  # Move to the next line
 
-        # Calculate scale to fit the rectangle inside B6 size
-        scale = min(b6_width / original_width, b6_height / original_height) * scale_down_factor
-        scaled_width, scaled_height = original_width * scale, original_height * scale
+        # Calculate scaled dimensions for the rectangle using sorted dimensions
+        scale = min(b6_width / sorted_dims[0], b6_height / sorted_dims[1]) * scale_down_factor
+        scaled_width, scaled_height = sorted_dims[0] * scale, sorted_dims[1] * scale
+        x_pos, y_pos = 10, text_y + 10
 
-        # Position for the rectangle: left and below the text
-        x_pos = 10  # Left alignment
-        y_pos = text_y + 55  # Below the text, with a small gap
+        # Determine which edges are toggled
+        long_edges_toggled = [entry.is_toggled_1, entry.is_toggled_2]
+        short_edges_toggled = [entry.is_toggled_3, entry.is_toggled_4]
 
-        # Set fill color for the rectangle
-        pdf.set_fill_color(0, 255, 0)  # Green color for the rectangle
+        # Draw each edge of the rectangle, adjusting the stroke width for toggled edges
+        for i in range(2):
+            pdf.set_line_width(1.5 if long_edges_toggled[i] else 0.2)
+            pdf.line(x_pos, y_pos + i * scaled_height, x_pos + scaled_width, y_pos + i * scaled_height)
 
-        # Draw the rectangle
-        pdf.rect(x_pos, y_pos, scaled_width, scaled_height, 'F')
+            pdf.set_line_width(1.5 if short_edges_toggled[i] else 0.2)
+            pdf.line(x_pos + i * scaled_width, y_pos, x_pos + i * scaled_width, y_pos + scaled_height)
 
         # Save the PDF
         pdf.output(filename)
@@ -274,17 +274,17 @@ class StickersOperator(bpy.types.Operator):
         pdf_dir = bpy.path.abspath(self.filepath)
         os.makedirs(pdf_dir, exist_ok=True)
 
-        for entry in context.scene.dimension_entries:
-            width, height = entry.width, entry.height
+        for index, entry in enumerate(context.scene.dimension_entries):
+            width, height, length = entry.width, entry.height, entry.length
             pdf_filename = os.path.join(pdf_dir, f"{entry.name}.pdf")
-            self.draw_and_export_pdf(width, height, pdf_filename, entry, context)
+            self.draw_and_export_pdf(width, height, length, pdf_filename, entry, context, index + 1)
 
         self.report({'INFO'}, f"Stickers exported as PDFs to {pdf_dir}")
         return {'FINISHED'}
-
+        
 
     def invoke(self, context, event):
-        # self.filepath = f"{context.scene.project_name}.pdf"
+        # self.filepath = f"{context.scene.project_name}"
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
