@@ -218,28 +218,53 @@ class StickersOperator(bpy.types.Operator):
         default="//untitled.pdf"
     )
 
-    def draw_and_export_pdf(self, original_width, original_height, filename):
+    def draw_and_export_pdf(self, original_width, original_height, filename, entry, context, scale_down_factor=0.5):
         """
-        Create a PDF file with a white B6 page and a centered rectangle.
+        Create a PDF file with a white B6 page, text in the top left corner, and a rectangle positioned below the text.
         """
         # B6 size in mm
         b6_width, b6_height = 176, 125
 
-        # Calculate scale to fit the rectangle inside B6 size
-        scale = min(b6_width / original_width, b6_height / original_height)
-        scaled_width, scaled_height = original_width * scale, original_height * scale
-
-        # Calculate position to center the rectangle
-        x_pos = (b6_width - scaled_width) / 2
-        y_pos = (b6_height - scaled_height) / 2
-
         pdf = FPDF(unit="mm", format=[b6_width, b6_height])
         pdf.add_page()
 
-         # Set fill color for the rectangle
-        pdf.set_fill_color(0, 255, 0)  # Black color for the rectangle
-        
-      # Draw the centered rectangle (without covering the entire page)
+        # Set font for the text
+        pdf.set_font("Arial", size=10)
+        line_height = 6
+
+        # Retrieve project and material names from the Blender scene context
+        project_name = context.scene.project_name
+        material_name = context.scene.material_name
+
+        # Text content
+        texts = [
+            f"Project: {project_name}",
+            f"Material: {material_name}",
+            f"Name: {entry.name}",
+            f"Dimensions: {entry.width:.1f}x{entry.height:.1f}"
+        ]
+
+        # Top left corner position for text
+        text_x, text_y = 10, 10
+
+        # Render each line of text
+        for text in texts:
+            pdf.set_xy(text_x, text_y)
+            pdf.cell(0, line_height, text)
+            text_y += line_height  # Move to the next line
+
+        # Calculate scale to fit the rectangle inside B6 size
+        scale = min(b6_width / original_width, b6_height / original_height) * scale_down_factor
+        scaled_width, scaled_height = original_width * scale, original_height * scale
+
+        # Position for the rectangle: left and below the text
+        x_pos = 10  # Left alignment
+        y_pos = text_y + 55  # Below the text, with a small gap
+
+        # Set fill color for the rectangle
+        pdf.set_fill_color(0, 255, 0)  # Green color for the rectangle
+
+        # Draw the rectangle
         pdf.rect(x_pos, y_pos, scaled_width, scaled_height, 'F')
 
         # Save the PDF
@@ -252,10 +277,11 @@ class StickersOperator(bpy.types.Operator):
         for entry in context.scene.dimension_entries:
             width, height = entry.width, entry.height
             pdf_filename = os.path.join(pdf_dir, f"{entry.name}.pdf")
-            self.draw_and_export_pdf(width, height, pdf_filename)
+            self.draw_and_export_pdf(width, height, pdf_filename, entry, context)
 
         self.report({'INFO'}, f"Stickers exported as PDFs to {pdf_dir}")
         return {'FINISHED'}
+
 
     def invoke(self, context, event):
         # self.filepath = f"{context.scene.project_name}.pdf"
