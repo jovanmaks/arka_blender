@@ -159,6 +159,7 @@ class SimplePanel(bpy.types.Panel):
         row = layout.row(align=True)
         row.operator("object.export_csv")
         row.operator("object.stickers_operator")
+        layout.operator("object.export_canvas", text="Canvas")
         # row.operator("object.export_canvas")
 
 
