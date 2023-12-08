@@ -13,6 +13,14 @@ Rectangle = namedtuple("Rectangle", ["x", "y", "w", "h"])
 Rect = namedtuple("Rect", ["x", "y", "w", "h"])
 
 
+# Custom PropertyGroup to hold rectangle data
+class PackedRectangle(bpy.types.PropertyGroup):
+    x: bpy.props.FloatProperty()
+    y: bpy.props.FloatProperty()
+    w: bpy.props.FloatProperty()
+    h: bpy.props.FloatProperty()
+    rid: bpy.props.IntProperty()
+
 
 class RunNestingAlgorithmOperator(bpy.types.Operator):
     bl_idname = "object.run_nesting_algorithm"
@@ -76,15 +84,7 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
             # Handle the case where rotation is neither ENABLED nor DISABLED
             self.report({'ERROR'}, f"Unknown rotation value: {rotation_str}")
             return {'CANCELLED'}
-
    
-        # # Retrieve rectangle dimensions
-        # rectangles = []
-        # for entry in context.scene.dimension_entries:
-        #     sorted_dims = sorted([entry.width, entry.height, entry.length])
-        #     rectangles.append((int(sorted_dims[1]), int(sorted_dims[2])))
-
-
         # Create a new collection for the planes
         plane_collection = bpy.data.collections.new("Packed Planes")
         bpy.context.scene.collection.children.link(plane_collection)
@@ -124,7 +124,6 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
             # Start packing
             p.pack()
 
-            # pdb.set_trace()
              # Draw the bin plane with offset
             bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=((container_width / 200) + bin_offset, container_height / 200, 0))
             bpy.context.object.scale.x = container_width / 100
@@ -156,7 +155,37 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
           
             bin_offset += (container_width / 100) + extra_space
 
-        return {'FINISHED'}
+            # pdb.set_trace()
+            # packed_rectangles_data = bpy.data.collections.new("Packed Rectangles Data")
+            # bpy.context.scene.collection.children.link(packed_rectangles_data)
+
+            # for abin in p:
+            #     for rect in abin:
+            #         x, y, w, h, rid = rect.x, rect.y, rect.width, rect.height, rect.rid
+                    
+            #         # Corrected: Create a new empty object and set its properties
+            #         rect_data = bpy.data.objects.new(name=f"Rect_{rid}", object_data=None)
+            #         rect_data.location = (x, y, 0)  # Assuming z is 0 for a 2D plane
+            #         rect_data.scale = (w, h, 1)     # Assuming uniform scale in z-axis
+
+            #         # Add custom properties
+            #         rect_data["x"] = x
+            #         rect_data["y"] = y
+            #         rect_data["w"] = w
+            #         rect_data["h"] = h
+            #         rect_data["rid"] = rid
+
+            #         # Link the empty object to the collection
+            #         packed_rectangles_data.objects.link(rect_data)
+
+            # # Store the name of the collection in the scene for later retrieval
+            # context.scene["packed_rectangles_collection"] = packed_rectangles_data.name
+
+            # Trigger PDF export (without passing data directly)
+            # bpy.ops.object.export_canvas_as_pdf('INVOKE_DEFAULT')
+
+            return {'FINISHED'}
+
 
 
 
@@ -198,6 +227,7 @@ class RunProjectObjectsOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
+
 class ExportCanvasAsPDFOperator(bpy.types.Operator):
     bl_idname = "object.export_canvas_as_pdf"
     bl_label = "Export Canvas as PDF"
@@ -211,7 +241,14 @@ class ExportCanvasAsPDFOperator(bpy.types.Operator):
     )
 
     def execute(self, context):
-        pdb.set_trace()
+        # Retrieve the packed rectangle data from the scene
+        collection_name = context.scene.get("packed_rectangles_collection", "")
+        packed_rectangles_collection = bpy.data.collections.get(collection_name)
+
+        if not packed_rectangles_collection:
+            self.report({'ERROR'}, "Packed rectangle data not found.")
+            return {'CANCELLED'}
+
         # A4 dimensions in mm
         a4_width, a4_height = 210, 297
 
@@ -219,26 +256,17 @@ class ExportCanvasAsPDFOperator(bpy.types.Operator):
         pdf = FPDF(unit="mm", format="A4")
         pdf.add_page()
 
-        # Get the canvas dimensions (assuming they are stored in the scene properties)
+        # Get the canvas dimensions
         canvas_width = context.scene.container_width
         canvas_height = context.scene.container_height
 
         # Calculate the scale factor to fit the canvas onto the A4 page
         scale_factor = min(a4_width / canvas_width, a4_height / canvas_height)
 
-        # Draw the rectangles on the PDF
-        for entry in context.scene.dimension_entries:
-            # Get rectangle dimensions and position
-            # Assuming the positions are stored in the entry
-            rect_x, rect_y, rect_w, rect_h = entry.x, entry.y, entry.width, entry.height
-
-            # Scale and position the rectangle on the PDF
-            pdf_x = rect_x * scale_factor
-            pdf_y = rect_y * scale_factor
-            pdf_w = rect_w * scale_factor
-            pdf_h = rect_h * scale_factor
-
-            # Draw the rectangle on the PDF
+        # Use rectangle data to draw rectangles
+        for obj in packed_rectangles_collection.objects:
+            x, y, w, h = obj["x"], obj["y"], obj["w"], obj["h"]
+            pdf_x, pdf_y, pdf_w, pdf_h = x * scale_factor, y * scale_factor, w * scale_factor, h * scale_factor
             pdf.rect(pdf_x, pdf_y, pdf_w, pdf_h)
 
         # Save the PDF to the specified filepath
@@ -251,12 +279,17 @@ class ExportCanvasAsPDFOperator(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
+
+
+
 def register():
+    bpy.utils.register_class(PackedRectangle)
     bpy.utils.register_class(RunNestingAlgorithmOperator)
     bpy.utils.register_class(RunProjectObjectsOperator)
     bpy.utils.register_class(ExportCanvasAsPDFOperator)
 
 def unregister():
+    bpy.utils.unregister_class(PackedRectangle)
     bpy.utils.unregister_class(RunNestingAlgorithmOperator)
     bpy.utils.unregister_class(RunProjectObjectsOperator)
     bpy.utils.unregister_class(ExportCanvasAsPDFOperator)
