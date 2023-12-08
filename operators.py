@@ -288,15 +288,6 @@ class StickersOperator(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
-class ExportCanvasOperator(bpy.types.Operator):
-    bl_idname = "object.export_canvas"
-    bl_label = "Export Canvas"
-    bl_description = "Export the canvas layout as a file"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        self.report({'INFO'}, "Export Canvas functionality not implemented yet.")
-        return {'FINISHED'}
 
 
 
@@ -307,7 +298,6 @@ def register():
     bpy.utils.register_class(ClearAllDimensionsOperator)
     bpy.utils.register_class(ExportCSVOperator)
     bpy.utils.register_class(StickersOperator)
-    bpy.utils.register_class(ExportCanvasOperator)
     bpy.utils.register_class(ToggleEntryOperator)
 
 def unregister():
@@ -317,5 +307,4 @@ def unregister():
     bpy.utils.unregister_class(ClearAllDimensionsOperator)
     bpy.utils.unregister_class(ExportCSVOperator)
     bpy.utils.unregister_class(StickersOperator)
-    bpy.utils.unregister_class(ExportCanvasOperator)
     bpy.utils.unregister_class(ToggleEntryOperator)

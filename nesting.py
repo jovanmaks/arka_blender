@@ -1,6 +1,7 @@
 import bpy
 from collections import namedtuple
 import pdb
+from fpdf import FPDF
 
 from .rectpack.packer import newPacker, PackingMode, PackingBin, SORT_RATIO # Import necessary constants
 from .rectpack import packer, guillotine, maxrects, skyline
@@ -108,11 +109,17 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
             # Add a new bin
             p.add_bin(container_width, container_height)
 
-            # Add only the rectangles that are not yet packed
+            # Add only the rectangles that are not yet packed and can fit in the bin
             for r in rectangles:
                 if r[2] not in packed_rectangles:  # Check using identifier
-                    p.add_rect(*r[:2], rid=r[2])  # Pass width, height, and identifier
-
+                    rect_width, rect_height = r[:2]
+                    if rect_width <= container_width and rect_height <= container_height:
+                        p.add_rect(rect_width, rect_height, rid=r[2])  # Pass width, height, and identifier
+                    else:
+                        # Handle the case where the rectangle is too big
+                        # For example, report an error or skip the rectangle
+                        self.report({'ERROR'}, f"Rectangle {r[2]} is too large for the container. Packing process cancelled.")
+                        return {'CANCELLED'}
 
             # Start packing
             p.pack()
@@ -191,65 +198,68 @@ class RunProjectObjectsOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class ExportCanvasAsPDFOperator(bpy.types.Operator):
+    bl_idname = "object.export_canvas_as_pdf"
+    bl_label = "Export Canvas as PDF"
+    bl_description = "Export the packed canvas layout as a PDF"
+
+    filepath: bpy.props.StringProperty(
+        subtype="FILE_PATH",
+        name="Save As",
+        description="Save canvas layout to PDF",
+        default="//canvas_layout.pdf"
+    )
+
+    def execute(self, context):
+        pdb.set_trace()
+        # A4 dimensions in mm
+        a4_width, a4_height = 210, 297
+
+        # Create an FPDF object with A4 dimensions
+        pdf = FPDF(unit="mm", format="A4")
+        pdf.add_page()
+
+        # Get the canvas dimensions (assuming they are stored in the scene properties)
+        canvas_width = context.scene.container_width
+        canvas_height = context.scene.container_height
+
+        # Calculate the scale factor to fit the canvas onto the A4 page
+        scale_factor = min(a4_width / canvas_width, a4_height / canvas_height)
+
+        # Draw the rectangles on the PDF
+        for entry in context.scene.dimension_entries:
+            # Get rectangle dimensions and position
+            # Assuming the positions are stored in the entry
+            rect_x, rect_y, rect_w, rect_h = entry.x, entry.y, entry.width, entry.height
+
+            # Scale and position the rectangle on the PDF
+            pdf_x = rect_x * scale_factor
+            pdf_y = rect_y * scale_factor
+            pdf_w = rect_w * scale_factor
+            pdf_h = rect_h * scale_factor
+
+            # Draw the rectangle on the PDF
+            pdf.rect(pdf_x, pdf_y, pdf_w, pdf_h)
+
+        # Save the PDF to the specified filepath
+        pdf.output(self.filepath)
+
+        self.report({'INFO'}, f"Canvas layout exported as PDF to {self.filepath}")
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
 
 def register():
     bpy.utils.register_class(RunNestingAlgorithmOperator)
     bpy.utils.register_class(RunProjectObjectsOperator)
+    bpy.utils.register_class(ExportCanvasAsPDFOperator)
 
 def unregister():
     bpy.utils.unregister_class(RunNestingAlgorithmOperator)
     bpy.utils.unregister_class(RunProjectObjectsOperator)
+    bpy.utils.unregister_class(ExportCanvasAsPDFOperator)
 
 if __name__ == "__main__":
     register()
-
-
-
-
-
-
-        # p = newPacker(mode=mode, bin_algo=bin_algo, pack_algo=pack_algo, sort_algo=sort_algo, rotation=rotation)
-
-        # for r in rectangles:
-        #     p.add_rect(*r)
-
-        # p.add_bin(container_width, container_height)
-
-        # Start packing
-        # p.pack()
-
-        # Create a new collection for the planes
-        # plane_collection = bpy.data.collections.new("Packed Planes")
-        # bpy.context.scene.collection.children.link(plane_collection)
-        
-        # This is the big plane
-        # bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(container_width / 200, container_height / 200, 0))
-        # bpy.context.object.scale.x = container_width / 100
-        # bpy.context.object.scale.y = container_height / 100
-
-       # Process packed rectangles and place them as planes without spacing
-        # for abin in p:
-        #     for rect in abin:
-        #         x, y, w, h = rect.x, rect.y, rect.width, rect.height
-
-        #         # Subtract spacing to get original dimensions for drawing
-        #         original_w = w - spacing
-        #         original_h = h - spacing
-
-        #         # Scale the dimensions for drawing
-        #         scaled_w = original_w / 100
-        #         scaled_h = original_h / 100
-
-        #         # Calculate the scaled position
-        #         scaled_x = (x / 100) 
-        #         scaled_y = (y / 100)
-
-        #         # Create the plane at the scaled position
-        #         bpy.ops.mesh.primitive_plane_add(size=1, enter_editmode=False, location=(scaled_x + scaled_w / 2, scaled_y + scaled_h / 2, 0))
-        #         bpy.context.object.scale.x = scaled_w
-        #         bpy.context.object.scale.y = scaled_h
-
-        #         # Link the object to the new collection
-        #         plane_collection.objects.link(bpy.context.object)
-        #         bpy.context.collection.objects.unlink(bpy.context.object)
-
