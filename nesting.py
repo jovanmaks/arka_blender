@@ -102,6 +102,9 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
         bin_offset = 0
         extra_space = 0.2  # Define extra space (in Blender units)
 
+        packed_rectangles_by_bin = {}
+        bin_index = 0  # Initialize bin index
+
 
         while len(packed_rectangles) < len(rectangles):
             # pdb.set_trace()
@@ -122,10 +125,6 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
                         return {'CANCELLED'}
 
 
-            # for r in rectangles:
-            #     if r[2] not in packed_rectangles:  # Check using identifier
-            #         p.add_rect(*r[:2], rid=r[2])  # Pass width, height, and identifier
-
             # Start packing
             p.pack()
 
@@ -136,10 +135,14 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
             plane_collection.objects.link(bpy.context.object)
             bpy.context.collection.objects.unlink(bpy.context.object)
 
-               # Process packed rectangles and place them as planes with offset
+            packed_rectangles_by_bin[bin_index] = []
+
+            # pdb.set_trace()
+            # Process packed rectangles and place them as planes with offset
             for abin in p:
                 for rect in abin:
                     x, y, w, h = rect.x, rect.y, rect.width, rect.height
+                    rid = rect.rid
                     original_w = w - spacing
                     original_h = h - spacing
                     scaled_w = original_w / 100
@@ -152,7 +155,9 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
                     plane_collection.objects.link(bpy.context.object)
                     bpy.context.collection.objects.unlink(bpy.context.object)
 
-            # pdb.set_trace()
+                    packed_rectangles_by_bin[bin_index].append((x, y, w, h, rid))
+
+            bin_index += 1
             for rect in p.rect_list():
                 # packed_rectangles.add((rect[3], rect[4]))
                 packed_rectangles.add(rect[5])
@@ -185,9 +190,71 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
 
             # Store the name of the collection in the scene for later retrieval
             context.scene["packed_rectangles_collection"] = packed_rectangles_data.name
+            context.scene["packed_rectangles_by_bin"] = str(packed_rectangles_by_bin)
 
 
         return {'FINISHED'}
+
+
+class ExportCanvasAsPDFOperator(bpy.types.Operator):
+    bl_idname = "object.export_canvas_as_pdf"
+    bl_label = "Export Canvas as PDF"
+    bl_description = "Export the packed canvas layout as a PDF"
+
+    filepath: bpy.props.StringProperty(
+        subtype="FILE_PATH",
+        name="Save As",
+        description="Save canvas layout to PDF",
+        default="//canvas_layout.pdf"
+    )
+
+    def execute(self, context):
+        # Retrieve the packed rectangle data from the scene
+        collection_name = context.scene.get("packed_rectangles_collection", "")
+        packed_rectangles_by_bin_str = context.scene.get("packed_rectangles_by_bin", "")
+
+        if not packed_rectangles_by_bin_str:
+            self.report({'ERROR'}, "Packed rectangle data not found.")
+            return {'CANCELLED'}
+
+        # Parse the string to reconstruct the dictionary
+        try:
+            packed_rectangles_by_bin = eval(packed_rectangles_by_bin_str)
+        except:
+            self.report({'ERROR'}, "Error parsing packed rectangles data.")
+            return {'CANCELLED'}
+
+        # A4 dimensions in mm
+        a4_width, a4_height = 210, 297
+
+        # Create an FPDF object with A4 dimensions
+        pdf = FPDF(unit="mm", format="A4")
+       # Get the canvas dimensions
+        canvas_width = context.scene.container_width
+        canvas_height = context.scene.container_height
+
+        # Calculate the scale factor to fit the canvas onto the A4 page
+        scale_factor = min(a4_width / canvas_width, a4_height / canvas_height)
+
+        # Iterate over each bin and its rectangles
+        for bin_index, rectangles in packed_rectangles_by_bin.items():
+            pdf.add_page()  # Start a new page for each bin
+
+            # Use rectangle data to draw rectangles on this bin's page
+            for rect in rectangles:
+                x, y, w, h, rid = rect
+                pdf_x, pdf_y, pdf_w, pdf_h = x * scale_factor, y * scale_factor, w * scale_factor, h * scale_factor
+                pdf.rect(pdf_x, pdf_y, pdf_w, pdf_h)
+
+        # Save the PDF to the specified filepath
+        pdf.output(self.filepath)
+
+        self.report({'INFO'}, f"Canvas layout exported as PDF to {self.filepath}")
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
 
 
 
@@ -229,59 +296,6 @@ class RunProjectObjectsOperator(bpy.types.Operator):
             # next_x += (w / 100) + 0.05  # 0.05 units of spacing
 
         return {'FINISHED'}
-
-
-class ExportCanvasAsPDFOperator(bpy.types.Operator):
-    bl_idname = "object.export_canvas_as_pdf"
-    bl_label = "Export Canvas as PDF"
-    bl_description = "Export the packed canvas layout as a PDF"
-
-    filepath: bpy.props.StringProperty(
-        subtype="FILE_PATH",
-        name="Save As",
-        description="Save canvas layout to PDF",
-        default="//canvas_layout.pdf"
-    )
-
-    def execute(self, context):
-        # Retrieve the packed rectangle data from the scene
-        collection_name = context.scene.get("packed_rectangles_collection", "")
-        packed_rectangles_collection = bpy.data.collections.get(collection_name)
-
-        if not packed_rectangles_collection:
-            self.report({'ERROR'}, "Packed rectangle data not found.")
-            return {'CANCELLED'}
-
-        # A4 dimensions in mm
-        a4_width, a4_height = 210, 297
-
-        # Create an FPDF object with A4 dimensions
-        pdf = FPDF(unit="mm", format="A4")
-        pdf.add_page()
-
-        # Get the canvas dimensions
-        canvas_width = context.scene.container_width
-        canvas_height = context.scene.container_height
-
-        # Calculate the scale factor to fit the canvas onto the A4 page
-        scale_factor = min(a4_width / canvas_width, a4_height / canvas_height)
-
-        # Use rectangle data to draw rectangles
-        for obj in packed_rectangles_collection.objects:
-            x, y, w, h = obj["x"], obj["y"], obj["w"], obj["h"]
-            pdf_x, pdf_y, pdf_w, pdf_h = x * scale_factor, y * scale_factor, w * scale_factor, h * scale_factor
-            pdf.rect(pdf_x, pdf_y, pdf_w, pdf_h)
-
-        # Save the PDF to the specified filepath
-        pdf.output(self.filepath)
-
-        self.report({'INFO'}, f"Canvas layout exported as PDF to {self.filepath}")
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-
 
 
 
