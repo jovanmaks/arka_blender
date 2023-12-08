@@ -233,8 +233,14 @@ class ExportCanvasAsPDFOperator(bpy.types.Operator):
         canvas_width = context.scene.container_width
         canvas_height = context.scene.container_height
 
+        # A4 dimensions in mm (with a 5-10% margin)
+        margin_percentage = 0.1  # 10% margin; adjust as needed
+        effective_a4_width = a4_width * (1 - margin_percentage)
+        effective_a4_height = a4_height * (1 - margin_percentage)
+
         # Calculate the scale factor to fit the canvas onto the A4 page
-        scale_factor = min(a4_width / canvas_width, a4_height / canvas_height)
+        # scale_factor = min(a4_width / canvas_width, a4_height / canvas_height)
+        scale_factor = min(effective_a4_width / canvas_width, effective_a4_height / canvas_height)
 
         # Set font for the indices
         pdf.set_font("Arial", size=8)
@@ -247,16 +253,17 @@ class ExportCanvasAsPDFOperator(bpy.types.Operator):
             for rect in rectangles:
                 x, y, w, h, rid = rect
 
-                adjusted_x = canvas_height - y - h
-                adjusted_y = x
-
+                # Adjust for horizontal mirroring
+                # Mirroring along horizontal axis by adjusting 'x'
                 # adjusted_x = canvas_width - x - w
-                # adjusted_x = x
-                # adjusted_y = y  # Y-axis remains the same
+                adjusted_y = canvas_height - y - h
 
-               # Scale the coordinates for the PDF
-                pdf_x, pdf_y = adjusted_x * scale_factor, adjusted_y * scale_factor
-                pdf_w, pdf_h = h * scale_factor, w * scale_factor
+                # pdf_x, pdf_y, pdf_w, pdf_h = x * scale_factor, y * scale_factor, w * scale_factor, h * scale_factor
+
+                # Scale the coordinates for the PDF
+                # pdf_x, pdf_y, pdf_w, pdf_h = adjusted_x * scale_factor, y * scale_factor, w * scale_factor, h * scale_factor
+                pdf_x, pdf_y, pdf_w, pdf_h = x * scale_factor, adjusted_y * scale_factor, w * scale_factor, h * scale_factor
+
 
                 # Now draw the rectangle and place the index
                 pdf.rect(pdf_x, pdf_y, pdf_w, pdf_h)
