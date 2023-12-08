@@ -121,6 +121,11 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
                         self.report({'ERROR'}, f"Rectangle {r[2]} is too large for the container. Packing process cancelled.")
                         return {'CANCELLED'}
 
+
+            # for r in rectangles:
+            #     if r[2] not in packed_rectangles:  # Check using identifier
+            #         p.add_rect(*r[:2], rid=r[2])  # Pass width, height, and identifier
+
             # Start packing
             p.pack()
 
@@ -156,35 +161,33 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
             bin_offset += (container_width / 100) + extra_space
 
             # pdb.set_trace()
-            # packed_rectangles_data = bpy.data.collections.new("Packed Rectangles Data")
-            # bpy.context.scene.collection.children.link(packed_rectangles_data)
+            packed_rectangles_data = bpy.data.collections.new("Packed Rectangles Data")
+            bpy.context.scene.collection.children.link(packed_rectangles_data)
 
-            # for abin in p:
-            #     for rect in abin:
-            #         x, y, w, h, rid = rect.x, rect.y, rect.width, rect.height, rect.rid
+            for abin in p:
+                for rect in abin:
+                    x, y, w, h, rid = rect.x, rect.y, rect.width, rect.height, rect.rid
                     
-            #         # Corrected: Create a new empty object and set its properties
-            #         rect_data = bpy.data.objects.new(name=f"Rect_{rid}", object_data=None)
-            #         rect_data.location = (x, y, 0)  # Assuming z is 0 for a 2D plane
-            #         rect_data.scale = (w, h, 1)     # Assuming uniform scale in z-axis
+                    # Corrected: Create a new empty object and set its properties
+                    rect_data = bpy.data.objects.new(name=f"Rect_{rid}", object_data=None)
+                    rect_data.location = (x, y, 0)  # Assuming z is 0 for a 2D plane
+                    rect_data.scale = (w, h, 1)     # Assuming uniform scale in z-axis
 
-            #         # Add custom properties
-            #         rect_data["x"] = x
-            #         rect_data["y"] = y
-            #         rect_data["w"] = w
-            #         rect_data["h"] = h
-            #         rect_data["rid"] = rid
+                    # Add custom properties
+                    rect_data["x"] = x
+                    rect_data["y"] = y
+                    rect_data["w"] = w
+                    rect_data["h"] = h
+                    rect_data["rid"] = rid
 
-            #         # Link the empty object to the collection
-            #         packed_rectangles_data.objects.link(rect_data)
+                    # Link the empty object to the collection
+                    packed_rectangles_data.objects.link(rect_data)
 
-            # # Store the name of the collection in the scene for later retrieval
-            # context.scene["packed_rectangles_collection"] = packed_rectangles_data.name
+            # Store the name of the collection in the scene for later retrieval
+            context.scene["packed_rectangles_collection"] = packed_rectangles_data.name
 
-            # Trigger PDF export (without passing data directly)
-            # bpy.ops.object.export_canvas_as_pdf('INVOKE_DEFAULT')
 
-            return {'FINISHED'}
+        return {'FINISHED'}
 
 
 
