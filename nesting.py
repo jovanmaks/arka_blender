@@ -229,22 +229,44 @@ class ExportCanvasAsPDFOperator(bpy.types.Operator):
 
         # Create an FPDF object with A4 dimensions
         pdf = FPDF(unit="mm", format="A4")
-       # Get the canvas dimensions
+        # Get the canvas dimensions
         canvas_width = context.scene.container_width
         canvas_height = context.scene.container_height
 
         # Calculate the scale factor to fit the canvas onto the A4 page
         scale_factor = min(a4_width / canvas_width, a4_height / canvas_height)
 
+        # Set font for the indices
+        pdf.set_font("Arial", size=8)
+
         # Iterate over each bin and its rectangles
         for bin_index, rectangles in packed_rectangles_by_bin.items():
             pdf.add_page()  # Start a new page for each bin
 
-            # Use rectangle data to draw rectangles on this bin's page
+            # Use rectangle data to draw rectangles and indices on this bin's page
             for rect in rectangles:
                 x, y, w, h, rid = rect
-                pdf_x, pdf_y, pdf_w, pdf_h = x * scale_factor, y * scale_factor, w * scale_factor, h * scale_factor
+
+                adjusted_x = canvas_height - y - h
+                adjusted_y = x
+
+                # adjusted_x = canvas_width - x - w
+                # adjusted_x = x
+                # adjusted_y = y  # Y-axis remains the same
+
+               # Scale the coordinates for the PDF
+                pdf_x, pdf_y = adjusted_x * scale_factor, adjusted_y * scale_factor
+                pdf_w, pdf_h = h * scale_factor, w * scale_factor
+
+                # Now draw the rectangle and place the index
                 pdf.rect(pdf_x, pdf_y, pdf_w, pdf_h)
+                
+                # Calculate the center position for the index text
+                index_x = pdf_x + (pdf_w / 2) - (pdf.get_string_width(str(rid)) / 2)
+                index_y = pdf_y + (pdf_h / 2) + 2  # Adjusted for text height
+
+                pdf.set_xy(index_x, index_y)
+                pdf.cell(pdf.get_string_width(str(rid)), 0, str(rid), 0, 0, 'C')  # Center align the index
 
         # Save the PDF to the specified filepath
         pdf.output(self.filepath)
