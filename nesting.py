@@ -208,7 +208,7 @@ class ExportCanvasAsPDFOperator(bpy.types.Operator):
         subtype="FILE_PATH",
         name="Save As",
         description="Save canvas layout to PDF",
-        default="//canvas_layout.pdf"
+        default="canvas_layout.pdf"
     )
 
     def execute(self, context):
@@ -297,10 +297,15 @@ class ExportCanvasAsPDFOperator(bpy.types.Operator):
         self.report({'INFO'}, f"Canvas layout exported as PDF to {self.filepath}")
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
 
+    def invoke(self, context, event):
+            context.window_manager.fileselect_add(self)
+
+            # Check if the current filepath has a .pdf extension, if not, add it
+            if not self.filepath.lower().endswith(".pdf"):
+                self.filepath += ".pdf"
+
+            return {'RUNNING_MODAL'}
 
 
 
