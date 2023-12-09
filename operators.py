@@ -228,7 +228,7 @@ class StickersOperator(bpy.types.Operator):
         pdf.add_page()
 
         # Set font for the text
-        pdf.set_font("Arial", size=10)
+        pdf.set_font("Arial", size=8)
         line_height = 6
 
         # Sort the dimensions to get the two larger sides

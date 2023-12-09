@@ -94,7 +94,7 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
         for index, entry in enumerate(context.scene.dimension_entries):
             _, index_str = entry.unique_id.rsplit("_", 1)
             index = int(index_str)
-            
+
             sorted_dims = sorted([entry.width, entry.height, entry.length])
             rect_width_with_spacing = int(sorted_dims[1]) + spacing
             rect_height_with_spacing = int(sorted_dims[2]) + spacing
@@ -246,7 +246,7 @@ class ExportCanvasAsPDFOperator(bpy.types.Operator):
         scale_factor = min(effective_a4_width / canvas_width, effective_a4_height / canvas_height)
 
         # Set font for the indices
-        pdf.set_font("Arial", size=8)
+        pdf.set_font("Arial", size=6)
 
         # Iterate over each bin and its rectangles
         for bin_index, rectangles in packed_rectangles_by_bin.items():
@@ -256,27 +256,31 @@ class ExportCanvasAsPDFOperator(bpy.types.Operator):
             for rect in rectangles:
                 x, y, w, h, rid = rect
 
-                # Adjust for horizontal mirroring
-                # Mirroring along horizontal axis by adjusting 'x'
-                # adjusted_x = canvas_width - x - w
                 adjusted_y = canvas_height - y - h
 
-                # pdf_x, pdf_y, pdf_w, pdf_h = x * scale_factor, y * scale_factor, w * scale_factor, h * scale_factor
-
                 # Scale the coordinates for the PDF
-                # pdf_x, pdf_y, pdf_w, pdf_h = adjusted_x * scale_factor, y * scale_factor, w * scale_factor, h * scale_factor
                 pdf_x, pdf_y, pdf_w, pdf_h = x * scale_factor, adjusted_y * scale_factor, w * scale_factor, h * scale_factor
-
 
                 # Now draw the rectangle and place the index
                 pdf.rect(pdf_x, pdf_y, pdf_w, pdf_h)
                 
-                # Calculate the center position for the index text
+                # Center position for the index text
                 index_x = pdf_x + (pdf_w / 2) - (pdf.get_string_width(str(rid)) / 2)
                 index_y = pdf_y + (pdf_h / 2) + 2  # Adjusted for text height
 
+                # Place the index
                 pdf.set_xy(index_x, index_y)
-                pdf.cell(pdf.get_string_width(str(rid)), 0, str(rid), 0, 0, 'C')  # Center align the index
+                pdf.cell(pdf.get_string_width(str(rid)), 0, str(rid), 0, 0, 'C')
+
+                # Adjust the position for the dimensions text
+                dim_text = f"{w} x {h}"  # Dimension text
+                dim_x = pdf_x + (pdf_w / 2) - (pdf.get_string_width(dim_text) / 2)
+                dim_y = index_y + 2  # Reduced gap; adjust as needed
+
+                # Place the dimensions text
+                pdf.set_xy(dim_x, dim_y)
+                pdf.cell(pdf.get_string_width(dim_text), 0, dim_text, 0, 0, 'C')
+
 
         # Save the PDF to the specified filepath
         pdf.output(self.filepath)
