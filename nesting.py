@@ -169,8 +169,8 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
             bin_offset += (container_width / 100) + extra_space
 
             # pdb.set_trace()
-            packed_rectangles_data = bpy.data.collections.new("Packed Rectangles Data")
-            bpy.context.scene.collection.children.link(packed_rectangles_data)
+            # packed_rectangles_data = bpy.data.collections.new("Packed Rectangles Data")
+            # bpy.context.scene.collection.children.link(packed_rectangles_data)
 
             for abin in p:
                 for rect in abin:
@@ -189,10 +189,10 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
                     rect_data["rid"] = rid
 
                     # Link the empty object to the collection
-                    packed_rectangles_data.objects.link(rect_data)
+                    # packed_rectangles_data.objects.link(rect_data)
 
             # Store the name of the collection in the scene for later retrieval
-            context.scene["packed_rectangles_collection"] = packed_rectangles_data.name
+            # context.scene["packed_rectangles_collection"] = packed_rectangles_data.name
             context.scene["packed_rectangles_by_bin"] = str(packed_rectangles_by_bin)
 
 
