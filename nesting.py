@@ -212,9 +212,10 @@ class ExportCanvasAsPDFOperator(bpy.types.Operator):
     )
 
     def execute(self, context):
-        # Retrieve the packed rectangle data from the scene
+       # Retrieve the packed rectangle data from the scene
         collection_name = context.scene.get("packed_rectangles_collection", "")
         packed_rectangles_by_bin_str = context.scene.get("packed_rectangles_by_bin", "")
+        spacing = context.scene.spacing  # Retrieve the spacing value
 
         if not packed_rectangles_by_bin_str:
             self.report({'ERROR'}, "Packed rectangle data not found.")
@@ -256,14 +257,23 @@ class ExportCanvasAsPDFOperator(bpy.types.Operator):
             for rect in rectangles:
                 x, y, w, h, rid = rect
 
-                adjusted_y = canvas_height - y - h
+                # Subtract spacing from the width and height to get the original dimensions
+                original_w = w - spacing
+                original_h = h - spacing
+
+                # Adjust coordinates and dimensions to visually include spacing
+                # This assumes the spacing is added to all sides of each rectangle
+                adjusted_w = w - spacing
+                adjusted_h = h - spacing
+                adjusted_x = x + (spacing / 2)
+                adjusted_y = canvas_height - y - h + (spacing / 2)
 
                 # Scale the coordinates for the PDF
-                pdf_x, pdf_y, pdf_w, pdf_h = x * scale_factor, adjusted_y * scale_factor, w * scale_factor, h * scale_factor
+                pdf_x, pdf_y, pdf_w, pdf_h = adjusted_x * scale_factor, adjusted_y * scale_factor, adjusted_w * scale_factor, adjusted_h * scale_factor
 
-                # Now draw the rectangle and place the index
+                # Draw the rectangle
                 pdf.rect(pdf_x, pdf_y, pdf_w, pdf_h)
-                
+
                 # Center position for the index text
                 index_x = pdf_x + (pdf_w / 2) - (pdf.get_string_width(str(rid)) / 2)
                 index_y = pdf_y + (pdf_h / 2) + 2  # Adjusted for text height
@@ -273,14 +283,13 @@ class ExportCanvasAsPDFOperator(bpy.types.Operator):
                 pdf.cell(pdf.get_string_width(str(rid)), 0, str(rid), 0, 0, 'C')
 
                 # Adjust the position for the dimensions text
-                dim_text = f"{w} x {h}"  # Dimension text
+                dim_text = f"{original_w} x {original_h}"  # Dimension text with original dimensions
                 dim_x = pdf_x + (pdf_w / 2) - (pdf.get_string_width(dim_text) / 2)
                 dim_y = index_y + 2  # Reduced gap; adjust as needed
 
                 # Place the dimensions text
                 pdf.set_xy(dim_x, dim_y)
                 pdf.cell(pdf.get_string_width(dim_text), 0, dim_text, 0, 0, 'C')
-
 
         # Save the PDF to the specified filepath
         pdf.output(self.filepath)
