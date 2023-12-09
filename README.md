@@ -1,6 +1,5 @@
 
-[Arka]
-[Arka] is a Blender plugin designed to enhance 3D object manipulation and layout optimization. This tool focuses on extracting edges from 3D objects and efficiently packing them on a surface using advanced bin packing techniques.
+Arka is a Blender plugin designed to enhance 3D object manipulation and layout optimization. This tool focuses on extracting edges from 3D objects and efficiently packing them on a surface using advanced bin packing techniques.
 
 Features
 Extract larger edges from 3D objects and convert them into flat rectangles.
