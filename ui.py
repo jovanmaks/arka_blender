@@ -1,4 +1,5 @@
 import bpy
+import webbrowser
 # from .rectpack.packer import PackingMode  
 
 # Define the options for each EnumProperty
@@ -62,6 +63,11 @@ rotation_items = [
     ('ENABLED', "Enabled", "Enable rotation"),
     ('DISABLED', "Disabled", "Disable rotation")
 ]
+
+# Function to open the PayPal donation link
+def open_paypal_link():
+    webbrowser.open_new_tab("Your_PayPal_Donation_Link")
+
 
 # Custom UI List
 class SimpleUlDimensions(bpy.types.UIList):
@@ -160,7 +166,14 @@ class SimplePanel(bpy.types.Panel):
         row.operator("object.export_csv")
         row.operator("object.stickers_operator")
         layout.operator("object.export_canvas_as_pdf", text="Canvas")
-        # row.operator("object.export_canvas")
+
+        layout.separator()
+        # PayPal.me donation button
+        paypal_button = layout.row()
+        paypal_button.operator("wm.url_open", text="Support via PayPal").url = "https://www.paypal.me/JovanSerbia"
+
+        # Placeholder text message below the button
+        layout.label(text="Your support helps us improve and maintain this add-on!")
 
 
 def register():
