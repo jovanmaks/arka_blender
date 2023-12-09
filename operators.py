@@ -52,11 +52,10 @@ class GetDimensionOperator(bpy.types.Operator):
     bl_label = "Get"
 
     def execute(self, context):
-        
-
-        for obj in bpy.context.selected_objects:
+        # Use enumerate to get both the object and its index
+        for index, obj in enumerate(bpy.context.selected_objects):
             if obj is not None and obj.type == 'MESH':
-                unique_id = str(hash(obj))
+                unique_id = str(hash(obj)) + "_" + str(index)
 
                 # Check if this unique_id already exists in the collection
                 if any(entry.unique_id == unique_id for entry in context.scene.dimension_entries):
@@ -72,10 +71,10 @@ class GetDimensionOperator(bpy.types.Operator):
                 new_entry.height = round(dimensions.y * 100, 1)
                 new_entry.length = round(dimensions.z * 100, 1)
 
+                # Assuming set_object_material(obj) is a function you have elsewhere
                 set_object_material(obj)
 
         return {'FINISHED'}
-
 
 
 class RegenerateOperator(bpy.types.Operator):
@@ -218,7 +217,10 @@ class StickersOperator(bpy.types.Operator):
         default="//untitled.pdf"
     )
 
-    def draw_and_export_pdf(self, original_width, original_height, original_length, filename, entry, context, index, scale_down_factor=0.5):
+    def draw_and_export_pdf(self, original_width, original_height, original_length, filename, entry, context, scale_down_factor=0.5):
+         # Extract the index from the unique_id
+        _, index_str = entry.unique_id.rsplit("_", 1)
+        index = int(index_str)
         # B6 size in mm
         b6_width, b6_height = 176, 125
 
@@ -232,14 +234,15 @@ class StickersOperator(bpy.types.Operator):
         # Sort the dimensions to get the two larger sides
         sorted_dims = sorted([original_width, original_height, original_length], reverse=True)[:2]
 
-        # Text content including the index
+         # Text content including the extracted index
         texts = [
             f"Project: {context.scene.project_name}",
             f"Material: {context.scene.material_name}",
-            f"Index: {index}",
+            f"Index: {index}",  # Use the extracted index here
             f"Name: {entry.name}",
             f"Dimensions: {sorted_dims[0]:.1f} x {sorted_dims[1]:.1f}"  # Use sorted dimensions
         ]
+
 
         # Top left corner position for text
         text_x, text_y = 10, 10
@@ -274,10 +277,16 @@ class StickersOperator(bpy.types.Operator):
         pdf_dir = bpy.path.abspath(self.filepath)
         os.makedirs(pdf_dir, exist_ok=True)
 
-        for index, entry in enumerate(context.scene.dimension_entries):
+        # for index, entry in enumerate(context.scene.dimension_entries):
+        #     width, height, length = entry.width, entry.height, entry.length
+        #     pdf_filename = os.path.join(pdf_dir, f"{entry.name}.pdf")
+        #     self.draw_and_export_pdf(width, height, length, pdf_filename, entry, context, index + 1)
+
+        for entry in context.scene.dimension_entries:
             width, height, length = entry.width, entry.height, entry.length
             pdf_filename = os.path.join(pdf_dir, f"{entry.name}.pdf")
-            self.draw_and_export_pdf(width, height, length, pdf_filename, entry, context, index + 1)
+            # self.draw_and_export_pdf(width, height, length, pdf_filename, entry, context)
+            self.draw_and_export_pdf(width, height, length, pdf_filename, entry, context)
 
         self.report({'INFO'}, f"Stickers exported as PDFs to {pdf_dir}")
         return {'FINISHED'}

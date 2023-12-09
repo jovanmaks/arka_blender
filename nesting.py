@@ -92,6 +92,9 @@ class RunNestingAlgorithmOperator(bpy.types.Operator):
 
         rectangles = []
         for index, entry in enumerate(context.scene.dimension_entries):
+            _, index_str = entry.unique_id.rsplit("_", 1)
+            index = int(index_str)
+            
             sorted_dims = sorted([entry.width, entry.height, entry.length])
             rect_width_with_spacing = int(sorted_dims[1]) + spacing
             rect_height_with_spacing = int(sorted_dims[2]) + spacing
