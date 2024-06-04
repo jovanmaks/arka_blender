@@ -14,3 +14,6 @@ pyfpdf: A simple PDF generation library for Python
 
 Acknowledgments
 Special thanks to the developers and contributors of rectpack and pyfpdf for making these excellent libraries available and accessible to the open-source community.
+
+Whislist and TODO:
+  - adding mm units instead of cm for precission
